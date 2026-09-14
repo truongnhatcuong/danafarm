@@ -14,7 +14,11 @@ import {
 } from "lucide-react";
 import { UploadDropzone } from "@/lib/uploadthing-client";
 import { generateSku, generateVariantSku, slugify } from "@/lib/utils";
-import type { Category, ProductFormValues } from "./types";
+import {
+  groupCategoriesByParent,
+  type Category,
+  type ProductFormValues,
+} from "./types";
 
 const fieldClass =
   "w-full rounded-lg border border-admin-border bg-admin-surface px-3 py-2 text-sm text-admin-ink outline-none focus:border-admin-accent transition";
@@ -106,6 +110,37 @@ export function ProductDrawer({
 
   function regenerateSku() {
     onChange({ sku: generateSku(value.name || "Sản phẩm") });
+  }
+
+  function toggleCategory(id: number, checked: boolean) {
+    set(
+      "categoryIds",
+      checked
+        ? [...value.categoryIds, id]
+        : value.categoryIds.filter((existingId) => existingId !== id),
+    );
+  }
+
+  function renderCategoryChip(c: Category) {
+    const checked = value.categoryIds.includes(c.id);
+    return (
+      <label
+        key={c.id}
+        className={`cursor-pointer rounded-lg border px-3 py-1.5 text-sm transition ${
+          checked
+            ? "border-admin-accent bg-admin-accent-soft text-admin-accent"
+            : "border-admin-border text-admin-ink hover:bg-admin-bg"
+        }`}
+      >
+        <input
+          type="checkbox"
+          className="sr-only"
+          checked={checked}
+          onChange={(e) => toggleCategory(c.id, e.target.checked)}
+        />
+        {c.name}
+      </label>
+    );
   }
 
   return (
@@ -239,41 +274,28 @@ export function ProductDrawer({
                 <legend className="mb-2 text-sm font-bold text-admin-ink">
                   Danh mục
                 </legend>
-                <div className="flex flex-wrap gap-2">
-                  {categories.length === 0 && (
-                    <p className="text-sm text-admin-muted">
-                      Chưa có danh mục nào.
-                    </p>
-                  )}
-                  {categories.map((c) => {
-                    const checked = value.categoryIds.includes(c.id);
-                    return (
-                      <label
-                        key={c.id}
-                        className={`cursor-pointer rounded-lg border px-3 py-1.5 text-sm transition ${
-                          checked
-                            ? "border-admin-accent bg-admin-accent-soft text-admin-accent"
-                            : "border-admin-border text-admin-ink hover:bg-admin-bg"
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          className="sr-only"
-                          checked={checked}
-                          onChange={(e) =>
-                            set(
-                              "categoryIds",
-                              e.target.checked
-                                ? [...value.categoryIds, c.id]
-                                : value.categoryIds.filter((id) => id !== c.id),
-                            )
-                          }
-                        />
-                        {c.name}
-                      </label>
-                    );
-                  })}
-                </div>
+                {categories.length === 0 ? (
+                  <p className="text-sm text-admin-muted">
+                    Chưa có danh mục nào.
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {groupCategoriesByParent(categories).map(
+                      ({ root, children }) => (
+                        <div key={root.id}>
+                          {renderCategoryChip(root)}
+                          {children.length > 0 && (
+                            <div className="mt-2 ml-4 flex flex-wrap gap-2 border-l-2 border-admin-border pl-3">
+                              {children.map((child) =>
+                                renderCategoryChip(child),
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      ),
+                    )}
+                  </div>
+                )}
               </fieldset>
 
               <fieldset>
@@ -376,7 +398,7 @@ export function ProductDrawer({
                     onChange={(e) =>
                       set(
                         "quantity",
-                        Math.max(0, parseInt(e.target.value, 10) || 0)
+                        Math.max(0, parseInt(e.target.value, 10) || 0),
                       )
                     }
                     placeholder="0"
@@ -510,7 +532,11 @@ export function ProductDrawer({
                   type="button"
                   onClick={() => {
                     const nextIndex = value.variants.length + 1;
-                    const nextSku = generateVariantSku(value.sku, "", nextIndex);
+                    const nextSku = generateVariantSku(
+                      value.sku,
+                      "",
+                      nextIndex,
+                    );
                     set("variants", [
                       ...value.variants,
                       {

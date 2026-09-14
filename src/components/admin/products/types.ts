@@ -31,7 +31,30 @@ export type Product = {
     categories: { id: number; name: string }[];
 };
 
-export type Category = { id: number; name: string };
+export type Category = { id: number; name: string; parentId?: number | null };
+
+/** Nhóm danh mục theo cha-con: mỗi nhóm gồm danh mục cha và các danh mục con trực tiếp của nó. */
+export function groupCategoriesByParent(categories: Category[]): { root: Category; children: Category[] }[] {
+    const roots = categories.filter((c) => !c.parentId);
+    const childrenByParent = new Map<number, Category[]>();
+    for (const c of categories) {
+        if (c.parentId) {
+            if (!childrenByParent.has(c.parentId)) childrenByParent.set(c.parentId, []);
+            childrenByParent.get(c.parentId)!.push(c);
+        }
+    }
+
+    const groups = roots.map((root) => ({ root, children: childrenByParent.get(root.id) ?? [] }));
+
+    // Phòng hờ: danh mục con có parentId không khớp danh mục cha nào trong danh sách.
+    const rootIds = new Set(roots.map((r) => r.id));
+    const orphanChildren = categories.filter((c) => c.parentId && !rootIds.has(c.parentId));
+    for (const orphan of orphanChildren) {
+        groups.push({ root: orphan, children: [] });
+    }
+
+    return groups;
+}
 
 export type ProductMeta = { page: number; pageCount: number; total: number; pageSize: number };
 

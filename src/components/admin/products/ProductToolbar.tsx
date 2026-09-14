@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Plus, Search } from "lucide-react";
-import type { Category } from "./types";
+import { groupCategoriesByParent, type Category } from "./types";
 
 const fieldClass =
     "w-full rounded-lg border border-admin-border bg-admin-surface px-3 py-2 text-sm text-admin-ink outline-none focus:border-admin-accent transition";
@@ -92,11 +92,17 @@ export function ProductToolbar({
                     onChange={(e) => onCategoryFilterChange(e.target.value)}
                 >
                     <option value="">Tất cả danh mục</option>
-                    {categories.map((c) => (
-                        <option key={c.id} value={c.id}>
-                            {c.name}
-                        </option>
-                    ))}
+                    {groupCategoriesByParent(categories).map(({ root, children }) => [
+                        <option key={root.id} value={root.id}>
+                            {root.name}
+                        </option>,
+                        ...children.map((child) => (
+                            <option key={child.id} value={child.id}>
+                                {"  — "}
+                                {child.name}
+                            </option>
+                        )),
+                    ])}
                 </select>
                 <select
                     className={`${fieldClass} sm:w-40`}
