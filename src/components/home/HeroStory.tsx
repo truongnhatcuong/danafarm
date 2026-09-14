@@ -11,7 +11,7 @@ const FACTS = [
 
 export function HeroStory() {
   return (
-    <section className="pt-1 md:pt-71">
+    <section className="pt-1 md:pt-6">
       <div
         className="hero-rise  overflow-hidden border-y border-shop-border bg-white/60 py-3"
         style={{ animationDelay: "0.5s" }}
