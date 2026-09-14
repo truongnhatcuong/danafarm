@@ -39,7 +39,7 @@ export const productInputSchema = z.object({
     description: optionalText(100000),
     usageGuide: optionalText(10000),
     preservationGuide: optionalText(10000),
-    stockStatus: z.enum(["in_stock", "out_of_stock"]),
+    quantity: z.coerce.number().int().min(0, "Số lượng không được âm").default(0),
     status: z.enum(["active", "draft"]),
     isFeatured: z.boolean().default(false),
     isOnSale: z.boolean().default(false),

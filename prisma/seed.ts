@@ -185,6 +185,7 @@ async function seedProducts(categoryIds: Map<string, number>) {
                 slug: product.slug,
                 price: product.price,
                 compareAtPrice: product.compareAtPrice || null,
+                quantity: 100,
                 isFeatured: position < 8,
                 isBestSeller: position < 4,
                 isNew: position >= 8 && position < 16,

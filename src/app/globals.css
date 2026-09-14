@@ -1,5 +1,37 @@
 @import "tailwindcss";
 
+.home-banner-swiper .swiper-pagination-bullet {
+  width: 9px;
+  height: 9px;
+  background: white;
+  opacity: 0.65;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 25%);
+}
+
+.home-banner-swiper .swiper-pagination-bullet-active {
+  width: 24px;
+  border-radius: 999px;
+  background: var(--color-shop-main);
+  opacity: 1;
+}
+
+/* UploadThing dropzone & icon constraints */
+[data-ut-element="upload-icon"],
+.ut-upload-icon,
+[data-ut-element="container"] svg {
+  width: 40px !important;
+  height: 40px !important;
+  max-width: 40px !important;
+  max-height: 40px !important;
+  display: block !important;
+  margin: 0 auto 0.5rem auto !important;
+}
+
+[data-ut-element="container"] {
+  padding: 1.5rem 1rem !important;
+  border-radius: 0.75rem !important;
+}
+
 :root {
   /* Core brand colors — extracted from dalatfarm1994.com */
   --shop-color-bg: #f5f3ea;
@@ -42,6 +74,19 @@
 
   --background: var(--shop-color-bg);
   --foreground: var(--shop-color-text);
+
+  /* Admin workspace — a coffee-dark shell around the same brand accent */
+  --admin-bg: #f2f0e9;
+  --admin-surface: #ffffff;
+  --admin-ink: #201c15;
+  --admin-muted: #7a7566;
+  --admin-border: #e7e2d5;
+  --admin-sidebar-bg: #17140f;
+  --admin-sidebar-ink: #ece7db;
+  --admin-sidebar-muted: #a39c8a;
+  --admin-sidebar-border: #2c2820;
+  --admin-accent: #d9763d;
+  --admin-accent-soft: #f7e3d3;
 }
 
 @theme inline {
@@ -83,24 +128,38 @@
   --color-footer-hover: var(--footer-color-hover);
 
   --font-sans: var(--font-quicksand);
+
+  --color-admin-bg: var(--admin-bg);
+  --color-admin-surface: var(--admin-surface);
+  --color-admin-ink: var(--admin-ink);
+  --color-admin-muted: var(--admin-muted);
+  --color-admin-border: var(--admin-border);
+  --color-admin-sidebar-bg: var(--admin-sidebar-bg);
+  --color-admin-sidebar-ink: var(--admin-sidebar-ink);
+  --color-admin-sidebar-muted: var(--admin-sidebar-muted);
+  --color-admin-sidebar-border: var(--admin-sidebar-border);
+  --color-admin-accent: var(--admin-accent);
+  --color-admin-accent-soft: var(--admin-accent-soft);
 }
 
-* {
-  box-sizing: border-box;
-}
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
 
-html {
-  scroll-behavior: smooth;
-}
+  html {
+    scroll-behavior: smooth;
+  }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-quicksand), "Quicksand", sans-serif;
-}
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-quicksand), "Quicksand", sans-serif;
+  }
 
-a {
-  color: inherit;
+  a {
+    color: inherit;
+  }
 }
 
 /* Simple utility for line clamping product/post titles */

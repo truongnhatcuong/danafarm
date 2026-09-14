@@ -43,7 +43,7 @@ model Product {
   description       String?          @db.LongText
   usageGuide        String?          @db.Text
   preservationGuide String?          @db.Text
-  stockStatus       String           @default("in_stock") // in_stock | out_of_stock
+  quantity          Int              @default(0) // Số lượng tồn kho
   isFeatured        Boolean          @default(false)
   isOnSale          Boolean          @default(false)
   isBestSeller      Boolean          @default(false)

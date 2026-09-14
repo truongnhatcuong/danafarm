@@ -1,39 +1,149 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { UploadButton } from "@/lib/uploadthing-client";
-
-type Category = { id: number; name: string; slug: string; description: string | null; imageUrl: string | null; imageUploadKey: string | null; position: number; parentId: number | null; parent?: { id: number; name: string } | null; _count?: { products: number; children: number } };
-type Meta = { page: number; pageSize: number; total: number; pageCount: number };
-const empty = { name: "", slug: "", description: "", imageUrl: "", imageUploadKey: "", position: 0, parentId: "" };
-const input = "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-shop-main";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { toast } from "sonner";
+import { CategoryFormCard } from "@/components/admin/categories/CategoryFormCard";
+import { CategoryTable } from "@/components/admin/categories/CategoryTable";
+import { emptyCategoryForm, type Category, type CategoryFormValues, type CategoryMeta } from "@/components/admin/categories/types";
 
 export function CategoryManager() {
-    const [items, setItems] = useState<Category[]>([]), [options, setOptions] = useState<Category[]>([]);
-    const [meta, setMeta] = useState<Meta>({ page: 1, pageSize: 10, total: 0, pageCount: 1 });
-    const [search, setSearch] = useState(""), [sort, setSort] = useState("position"), [direction, setDirection] = useState("asc");
-    const [form, setForm] = useState(empty), [editing, setEditing] = useState<number | null>(null), [busy, setBusy] = useState(false), [message, setMessage] = useState("");
-    const load = useCallback(async (page = 1) => { const result = await fetch(`/api/admin/categories?page=${page}&search=${encodeURIComponent(search)}&sort=${sort}&direction=${direction}`).then(r => r.json()); setItems(result.data ?? []); setMeta(result.pagination ?? meta); }, [search, sort, direction]);
-    const loadOptions = useCallback(async () => { const result = await fetch("/api/admin/categories/options").then(r => r.json()); setOptions(result.data ?? []); }, []);
-    useEffect(() => { void load(); void loadOptions(); }, [load, loadOptions]);
-    function edit(item: Category) { setEditing(item.id); setForm({ name: item.name, slug: item.slug, description: item.description ?? "", imageUrl: item.imageUrl ?? "", imageUploadKey: item.imageUploadKey ?? "", position: item.position, parentId: item.parentId?.toString() ?? "" }); window.scrollTo({ top: 0, behavior: "smooth" }); }
-    async function submit(e: React.FormEvent) { e.preventDefault(); setBusy(true); setMessage(""); const response = await fetch(editing ? `/api/admin/categories/${editing}` : "/api/admin/categories", { method: editing ? "PUT" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, parentId: form.parentId ? Number(form.parentId) : null, imageUrl: form.imageUrl || null, imageUploadKey: form.imageUploadKey || null, description: form.description || null }) }); const result = await response.json(); setBusy(false); if (!response.ok) return setMessage(result.error ?? "Có lỗi xảy ra."); setForm(empty); setEditing(null); setMessage("Đã lưu danh mục."); await load(); await loadOptions(); }
-    async function remove(id: number) { if (!confirm("Xóa danh mục này?")) return; const response = await fetch(`/api/admin/categories/${id}`, { method: "DELETE" }); const result = await response.json(); if (!response.ok) return setMessage(result.error); await load(Math.min(meta.page, meta.pageCount)); await loadOptions(); }
-    return <div className="space-y-6">
-        <header><h1 className="text-2xl font-bold text-slate-900">Quản lý danh mục</h1><p className="text-sm text-slate-500">Tạo cấu trúc danh mục và hình đại diện.</p></header>
-        <form onSubmit={submit} className="grid gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-2">
-            <h2 className="font-bold text-slate-900 md:col-span-2">{editing ? "Chỉnh sửa danh mục" : "Thêm danh mục"}</h2>
-            <label className="text-sm font-medium">Tên<input required className={input} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></label>
-            <label className="text-sm font-medium">Slug<input required pattern="[a-z0-9]+(?:-[a-z0-9]+)*" className={input} value={form.slug} onChange={e => setForm({ ...form, slug: e.target.value })} /></label>
-            <label className="text-sm font-medium">Danh mục cha<select className={input} value={form.parentId} onChange={e => setForm({ ...form, parentId: e.target.value })}><option value="">Không có</option>{options.filter(x => x.id !== editing).map(x => <option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
-            <label className="text-sm font-medium">Vị trí<input type="number" min="0" className={input} value={form.position} onChange={e => setForm({ ...form, position: Number(e.target.value) })} /></label>
-            <label className="text-sm font-medium md:col-span-2">Mô tả<textarea className={`${input} min-h-24`} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></label>
-            <div className="space-y-2 md:col-span-2"><span className="text-sm font-medium">Ảnh danh mục</span>{form.imageUrl && <div className="flex items-center gap-3"><img src={form.imageUrl} alt="" className="size-20 rounded-lg object-cover" /><button type="button" className="text-sm text-red-600" onClick={() => setForm({ ...form, imageUrl: "", imageUploadKey: "" })}>Gỡ ảnh</button></div>}<UploadButton endpoint="adminImage" onClientUploadComplete={(files) => { const file = files[0]; if (file) setForm({ ...form, imageUrl: file.url, imageUploadKey: file.key }); }} onUploadError={(error) => setMessage(error.message)} /></div>
-            {message && <p className="text-sm text-shop-main md:col-span-2">{message}</p>}<div className="flex gap-2 md:col-span-2"><button disabled={busy} className="rounded-lg bg-shop-main px-5 py-2 text-sm font-bold text-white disabled:opacity-50">{busy ? "Đang lưu..." : "Lưu"}</button>{editing && <button type="button" className="rounded-lg bg-slate-200 px-5 py-2 text-sm" onClick={() => { setEditing(null); setForm(empty); }}>Hủy</button>}</div>
-        </form>
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="mb-4 flex flex-wrap gap-2"><input className={`${input} max-w-sm`} placeholder="Tìm tên, slug, mô tả..." value={search} onChange={e => setSearch(e.target.value)} /><select className={`${input} w-auto`} value={sort} onChange={e => setSort(e.target.value)}><option value="position">Vị trí</option><option value="name">Tên</option><option value="createdAt">Ngày tạo</option><option value="updatedAt">Cập nhật</option></select><select className={`${input} w-auto`} value={direction} onChange={e => setDirection(e.target.value)}><option value="asc">Tăng</option><option value="desc">Giảm</option></select></div>
-            <div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead className="border-b text-slate-500"><tr><th className="p-3">Danh mục</th><th>Cha</th><th>Sản phẩm</th><th>Vị trí</th><th></th></tr></thead><tbody>{items.map(item => <tr key={item.id} className="border-b border-slate-100"><td className="p-3"><strong>{item.name}</strong><small className="block text-slate-500">{item.slug}</small></td><td>{item.parent?.name ?? "—"}</td><td>{item._count?.products ?? 0}</td><td>{item.position}</td><td className="whitespace-nowrap text-right"><button className="mr-3 text-blue-600" onClick={() => edit(item)}>Sửa</button><button className="text-red-600" onClick={() => remove(item.id)}>Xóa</button></td></tr>)}</tbody></table></div>
-            <div className="mt-4 flex items-center justify-between text-sm"><span>{meta.total} danh mục</span><div className="flex gap-2"><button disabled={meta.page <= 1} className="rounded border px-3 py-1 disabled:opacity-40" onClick={() => load(meta.page - 1)}>Trước</button><span>{meta.page}/{meta.pageCount}</span><button disabled={meta.page >= meta.pageCount} className="rounded border px-3 py-1 disabled:opacity-40" onClick={() => load(meta.page + 1)}>Sau</button></div></div>
-        </section>
-    </div>;
+    const [items, setItems] = useState<Category[]>([]);
+    const [options, setOptions] = useState<Category[]>([]);
+    const [meta, setMeta] = useState<CategoryMeta>({ page: 1, pageSize: 10, total: 0, pageCount: 1 });
+    const [search, setSearch] = useState("");
+    const [sort, setSort] = useState("position");
+    const [direction, setDirection] = useState("asc");
+    const [form, setForm] = useState<CategoryFormValues>(emptyCategoryForm);
+    const [editing, setEditing] = useState<number | null>(null);
+    const [busy, setBusy] = useState(false);
+
+    const load = useCallback(
+        async (page = 1) => {
+            const result = await fetch(
+                `/api/admin/categories?page=${page}&search=${encodeURIComponent(search)}&sort=${sort}&direction=${direction}`,
+            ).then((r) => r.json());
+            setItems(result.data ?? []);
+            setMeta(result.pagination ?? meta);
+        },
+        [search, sort, direction],
+    );
+
+    const loadOptions = useCallback(async () => {
+        const result = await fetch("/api/admin/categories/options").then((r) => r.json());
+        setOptions(result.data ?? []);
+    }, []);
+
+    useEffect(() => {
+        void load();
+        void loadOptions();
+    }, [load, loadOptions]);
+
+    function openEdit(item: Category) {
+        setEditing(item.id);
+        setForm({
+            name: item.name,
+            slug: item.slug,
+            description: item.description ?? "",
+            imageUrl: item.imageUrl ?? "",
+            imageUploadKey: item.imageUploadKey ?? "",
+            position: item.position,
+            parentId: item.parentId?.toString() ?? "",
+        });
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function cancelEdit() {
+        setEditing(null);
+        setForm(emptyCategoryForm);
+    }
+
+    async function submit(e: FormEvent) {
+        e.preventDefault();
+        setBusy(true);
+        const response = await fetch(editing ? `/api/admin/categories/${editing}` : "/api/admin/categories", {
+            method: editing ? "PUT" : "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                ...form,
+                parentId: form.parentId ? Number(form.parentId) : null,
+                imageUrl: form.imageUrl || null,
+                imageUploadKey: form.imageUploadKey || null,
+                description: form.description || null,
+            }),
+        });
+        const result = await response.json();
+        setBusy(false);
+        if (!response.ok) {
+            toast.error(result.error ?? "Có lỗi xảy ra.");
+            return;
+        }
+        toast.success(editing ? "Đã cập nhật danh mục." : "Đã thêm danh mục mới.");
+        cancelEdit();
+        await load();
+        await loadOptions();
+    }
+
+    async function performDelete(item: Category) {
+        const response = await fetch(`/api/admin/categories/${item.id}`, { method: "DELETE" });
+        const result = await response.json();
+        if (!response.ok) {
+            toast.error(result.error ?? "Không thể xóa danh mục.");
+            return;
+        }
+        toast.success(`Đã xóa "${item.name}".`);
+        if (editing === item.id) {
+            cancelEdit();
+        }
+        await load(Math.min(meta.page, meta.pageCount));
+        await loadOptions();
+    }
+
+    function requestDelete(item: Category) {
+        toast(`Xóa danh mục "${item.name}"?`, {
+            description: "Hành động này không thể hoàn tác.",
+            action: { label: "Xóa", onClick: () => void performDelete(item) },
+            cancel: { label: "Hủy", onClick: () => {} },
+        });
+    }
+
+    return (
+        <div className="space-y-6">
+            <header className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <h1 className="text-2xl font-bold text-admin-ink">Quản lý danh mục</h1>
+                    <p className="text-sm text-admin-muted">Tạo cấu trúc danh mục và hình đại diện cho cửa hàng.</p>
+                </div>
+                <div className="flex items-center gap-2 rounded-xl border border-admin-border bg-admin-surface px-3 py-1.5 text-xs font-semibold text-admin-muted shadow-xs">
+                    Tổng số: <span className="text-sm font-bold text-admin-ink">{meta.total}</span> danh mục
+                </div>
+            </header>
+
+            {/* Phần Add / Edit Category trên đầu */}
+            <CategoryFormCard
+                editing={editing}
+                value={form}
+                onChange={(patch) => setForm((f) => ({ ...f, ...patch }))}
+                parentOptions={options}
+                busy={busy}
+                onSubmit={submit}
+                onCancel={cancelEdit}
+                onUploadError={(message) => toast.error(message)}
+            />
+
+            {/* Bảng danh sách danh mục ở dưới giữ nguyên */}
+            <CategoryTable
+                items={items}
+                meta={meta}
+                search={search}
+                onSearchChange={setSearch}
+                sort={sort}
+                onSortChange={setSort}
+                direction={direction}
+                onDirectionChange={setDirection}
+                onPageChange={load}
+                onEdit={openEdit}
+                onDelete={requestDelete}
+            />
+        </div>
+    );
 }

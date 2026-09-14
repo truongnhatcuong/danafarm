@@ -49,7 +49,7 @@ export default async function HomePage() {
       }),
       prisma.post.findMany({
         orderBy: { publishedAt: "desc" },
-        take: 3,
+        take: 4,
       }),
     ]);
 

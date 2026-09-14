@@ -15,6 +15,13 @@
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
+    "@tiptap/extension-image": "^3.31.3",
+    "@tiptap/extension-link": "^3.31.3",
+    "@tiptap/extension-placeholder": "^3.31.3",
+    "@tiptap/extension-underline": "^3.31.3",
+    "@tiptap/pm": "^3.31.3",
+    "@tiptap/react": "^3.31.3",
+    "@tiptap/starter-kit": "^3.31.3",
     "@uploadthing/react": "^7.3.3",
     "clsx": "^2.1.1",
     "lucide-react": "^1.45.0",
@@ -27,7 +34,8 @@
     "tailwind-merge": "^3.7.0",
     "tsx": "^4.23.13",
     "uploadthing": "^7.7.4",
-    "zod": "^4.6.5"
+    "zod": "^4.6.5",
+    "zustand": "^5.0.15"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

@@ -30,7 +30,7 @@ export async function PUT(request: Request, { params }: Context) {
                 where: { id }, data: {
                     name: input.name, slug: input.slug, sku: nullable(input.sku), unitLabel: nullable(input.unitLabel), price: input.price,
                     compareAtPrice: nullable(input.compareAtPrice), shortDescription: nullable(input.shortDescription), description: nullable(input.description), usageGuide: nullable(input.usageGuide), preservationGuide: nullable(input.preservationGuide),
-                    stockStatus: input.stockStatus, status: input.status, isFeatured: input.isFeatured, isOnSale: input.isOnSale, isBestSeller: input.isBestSeller, isNew: input.isNew,
+                    quantity: input.quantity, status: input.status, isFeatured: input.isFeatured, isOnSale: input.isOnSale, isBestSeller: input.isBestSeller, isNew: input.isNew,
                     categories: { set: input.categoryIds.map((categoryId) => ({ id: categoryId })) },
                     images: { create: input.images.map((image, position) => ({ url: image.url, uploadKey: nullable(image.uploadKey), alt: nullable(image.alt), position: image.position ?? position })) },
                     variants: { create: input.variants.map((variant, position) => ({ name: variant.name, price: variant.price, compareAtPrice: nullable(variant.compareAtPrice), sku: nullable(variant.sku), position: variant.position ?? position })) },

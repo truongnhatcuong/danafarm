@@ -28,7 +28,7 @@ export default async function NewsPage() {
                         Khám phá kiến thức, công thức và câu chuyện từ vùng đất Đà Lạt.
                     </p>
                 </header>
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
                     {posts.map((post) => <PostCard key={post.id} post={post} />)}
                 </div>
             </Container>

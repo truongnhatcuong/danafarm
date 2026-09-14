@@ -36,7 +36,7 @@ export async function POST(request: Request) {
             data: {
                 name: input.name, slug: input.slug, sku: nullable(input.sku), unitLabel: nullable(input.unitLabel), price: input.price,
                 compareAtPrice: nullable(input.compareAtPrice), shortDescription: nullable(input.shortDescription), description: nullable(input.description),
-                usageGuide: nullable(input.usageGuide), preservationGuide: nullable(input.preservationGuide), stockStatus: input.stockStatus, status: input.status,
+                usageGuide: nullable(input.usageGuide), preservationGuide: nullable(input.preservationGuide), quantity: input.quantity, status: input.status,
                 isFeatured: input.isFeatured, isOnSale: input.isOnSale, isBestSeller: input.isBestSeller, isNew: input.isNew,
                 categories: { connect: input.categoryIds.map((id) => ({ id })) },
                 images: { create: input.images.map((image, position) => ({ url: image.url, uploadKey: nullable(image.uploadKey), alt: nullable(image.alt), position: image.position ?? position })) },
