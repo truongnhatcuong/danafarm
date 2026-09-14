@@ -1,0 +1,199 @@
+// DanaFarm clone — Prisma schema
+// Provider: MySQL
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Catalog
+// ---------------------------------------------------------------------------
+
+model Category {
+  id             Int        @id @default(autoincrement())
+  name           String
+  slug           String     @unique
+  description    String?    @db.Text
+  imageUrl       String?
+  imageUploadKey String?
+  position       Int        @default(0)
+  parentId       Int?
+  parent         Category?  @relation("CategoryToCategory", fields: [parentId], references: [id])
+  children       Category[] @relation("CategoryToCategory")
+  products       Product[]  @relation("ProductCategories")
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  @@index([parentId])
+}
+
+model Product {
+  id                Int              @id @default(autoincrement())
+  name              String
+  slug              String           @unique
+  sku               String?
+  unitLabel         String? // e.g. "Túi 150 g", "Hộp 500 g"
+  price             Int
+  compareAtPrice    Int?
+  shortDescription  String?          @db.Text
+  description       String?          @db.LongText
+  usageGuide        String?          @db.Text
+  preservationGuide String?          @db.Text
+  stockStatus       String           @default("in_stock") // in_stock | out_of_stock
+  isFeatured        Boolean          @default(false)
+  isOnSale          Boolean          @default(false)
+  isBestSeller      Boolean          @default(false)
+  isNew             Boolean          @default(false)
+  status            String           @default("active") // active | draft
+  categories        Category[]       @relation("ProductCategories")
+  images            ProductImage[]
+  variants          ProductVariant[]
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@index([isFeatured])
+  @@index([isOnSale])
+  @@index([isBestSeller])
+}
+
+model ProductImage {
+  id        Int     @id @default(autoincrement())
+  url       String
+  uploadKey String?
+  alt       String?
+  position  Int     @default(0)
+  productId Int
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+}
+
+model ProductVariant {
+  id             Int     @id @default(autoincrement())
+  name           String // e.g. "Túi / 150 g"
+  price          Int
+  compareAtPrice Int?
+  sku            String?
+  position       Int     @default(0)
+  productId      Int
+  product        Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+}
+
+// ---------------------------------------------------------------------------
+// Content: banners, posts, static pages
+// ---------------------------------------------------------------------------
+
+model Banner {
+  id                   Int      @id @default(autoincrement())
+  title                String?
+  subtitle             String?
+  imageUrl             String
+  imageUploadKey       String?
+  imageMobileUrl       String?
+  imageMobileUploadKey String?
+  link                 String?
+  buttonText           String?
+  position             Int      @default(0)
+  isActive             Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model Post {
+  id                  Int      @id @default(autoincrement())
+  title               String
+  slug                String   @unique
+  excerpt             String?  @db.Text
+  content             String   @db.LongText
+  coverImageUrl       String?
+  coverImageUploadKey String?
+  author              String?  @default("DanaFarm")
+  isFeatured          Boolean  @default(false)
+  publishedAt         DateTime @default(now())
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([publishedAt])
+}
+
+model Page {
+  id        Int      @id @default(autoincrement())
+  title     String
+  slug      String   @unique
+  content   String   @db.LongText
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ---------------------------------------------------------------------------
+// Site-wide settings & interactions
+// ---------------------------------------------------------------------------
+
+model SiteSetting {
+  id                  Int      @id @default(autoincrement())
+  companyName         String   @default("CÔNG TY TNHH DANAFARM")
+  taxCode             String?  @default("5801501977")
+  addressBusiness     String?  @db.Text
+  addressHeadquarters String?  @db.Text
+  phone               String?  @default("0385250680")
+  email               String?  @default("info@dalatfarm1994.com")
+  logoUrl             String?
+  logoUploadKey       String?
+  facebookUrl         String?
+  zaloUrl             String?
+  messengerUrl        String?
+  freeShipThreshold   Int?     @default(350000)
+  updatedAt           DateTime @updatedAt
+}
+
+model ContactMessage {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String
+  phone     String?
+  message   String   @db.Text
+  createdAt DateTime @default(now())
+}
+
+model NewsletterSubscriber {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  createdAt DateTime @default(now())
+}
+
+enum UserRole {
+  CUSTOMER
+  ADMIN
+}
+
+model User {
+  id           Int       @id @default(autoincrement())
+  name         String
+  email        String    @unique
+  passwordHash String
+  phone        String?
+  role         UserRole  @default(CUSTOMER)
+  sessions     Session[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([role])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  expiresAt DateTime
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
