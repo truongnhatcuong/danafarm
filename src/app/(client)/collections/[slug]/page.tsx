@@ -1,9 +1,14 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
+import { CollectionSortSelect } from "@/components/product/CollectionSortSelect";
 import { ProductGrid } from "@/components/product/ProductGrid";
+import { JsonLd } from "@/components/seo/JsonLd";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { Container } from "@/components/ui/Container";
 import { prisma } from "@/lib/prisma";
+import { absoluteUrl } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
@@ -16,19 +21,30 @@ export async function generateMetadata({
     params,
 }: CollectionPageProps): Promise<Metadata> {
     const { slug } = await params;
-    if (slug === "all") return { title: "Tất cả sản phẩm | DanaFarm" };
+    const path = `/collections/${slug}`;
+
+    if (slug === "all") {
+        return {
+            title: "Tất cả sản phẩm",
+            description: "Khám phá toàn bộ trà, cà phê, matcha và đặc sản Đà Lạt tại DanaFarm.",
+            alternates: { canonical: path },
+            openGraph: { url: absoluteUrl(path) },
+        };
+    }
 
     const category = await prisma.category.findUnique({
         where: { slug },
         select: { name: true, description: true },
     });
+    if (!category) return { title: "Không tìm thấy danh mục | DanaFarm" };
 
-    return category
-        ? {
-            title: `${category.name} | DanaFarm`,
-            description: category.description ?? `Khám phá ${category.name} tại DanaFarm.`,
-        }
-        : { title: "Không tìm thấy danh mục | DanaFarm" };
+    const description = category.description ?? `Khám phá ${category.name} tại DanaFarm.`;
+    return {
+        title: category.name,
+        description,
+        alternates: { canonical: path },
+        openGraph: { title: category.name, description, url: absoluteUrl(path) },
+    };
 }
 
 export default async function CollectionPage({
@@ -77,13 +93,42 @@ export default async function CollectionPage({
     });
 
     const title = category?.name ?? "Tất cả sản phẩm";
+    const breadcrumbItems = category
+        ? [{ label: "Tất cả sản phẩm", href: "/collections/all" }, { label: title }]
+        : [{ label: title }];
+
+    const collectionJsonLd = {
+        "@context": "https://schema.org",
+        "@type": "CollectionPage",
+        name: title,
+        description: category?.description ?? `Khám phá ${title} tại DanaFarm.`,
+        url: absoluteUrl(`/collections/${slug}`),
+        mainEntity: {
+            "@type": "ItemList",
+            itemListElement: products.slice(0, 24).map((product, index) => ({
+                "@type": "ListItem",
+                position: index + 1,
+                url: absoluteUrl(`/products/${product.slug}`),
+                name: product.name,
+            })),
+        },
+    };
 
     return (
         <>
-            <Breadcrumb items={[{ label: title }]} />
+            <JsonLd data={collectionJsonLd} />
+            <Breadcrumb items={breadcrumbItems} />
             <Container className="py-8 md:py-12">
                 <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                     <div>
+                        {category && (
+                            <Link
+                                href="/collections/all"
+                                className="mb-2 inline-flex items-center gap-1.5 text-sm font-medium text-shop-text/60 hover:text-shop-main"
+                            >
+                                <ArrowLeft size={15} /> Tất cả sản phẩm
+                            </Link>
+                        )}
                         <h1 className="text-2xl font-bold uppercase text-shop-title md:text-3xl">
                             {title}
                         </h1>
@@ -96,28 +141,7 @@ export default async function CollectionPage({
                             {products.length} sản phẩm
                         </p>
                     </div>
-                    <form className="flex items-center gap-2" action={`/collections/${slug}`}>
-                        <label htmlFor="sort" className="text-sm font-medium text-shop-title">
-                            Sắp xếp:
-                        </label>
-                        <select
-                            id="sort"
-                            name="sort"
-                            defaultValue={query.sort ?? "newest"}
-                            className="rounded-lg border border-shop-border bg-white px-3 py-2 text-sm outline-none focus:border-shop-main"
-                        >
-                            <option value="newest">Mới nhất</option>
-                            <option value="price-asc">Giá tăng dần</option>
-                            <option value="price-desc">Giá giảm dần</option>
-                            <option value="name">Tên A-Z</option>
-                        </select>
-                        <button
-                            type="submit"
-                            className="rounded-lg bg-shop-main px-3 py-2 text-sm font-semibold text-white hover:opacity-90"
-                        >
-                            Áp dụng
-                        </button>
-                    </form>
+                    <CollectionSortSelect defaultValue={query.sort ?? "newest"} />
                 </div>
                 <ProductGrid products={products} />
             </Container>

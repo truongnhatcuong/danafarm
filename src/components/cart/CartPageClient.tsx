@@ -182,10 +182,13 @@ export function CartPageClient() {
         <p className="border-t border-shop-border pt-4 text-xs leading-5 text-shop-text/55">
           Phí vận chuyển và ưu đãi sẽ được tính ở bước đặt hàng.
         </p>
+        <ButtonLink href="/checkout" className="mt-5 w-full">
+          Tiến hành đặt hàng
+        </ButtonLink>
         <ButtonLink
           href="/collections/all"
           variant="outline"
-          className="mt-5 w-full"
+          className="mt-3 w-full"
         >
           Tiếp tục mua sắm
         </ButtonLink>

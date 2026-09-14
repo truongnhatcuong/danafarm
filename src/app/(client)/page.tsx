@@ -1,16 +1,23 @@
 import type { Metadata } from "next";
 import { CategoryGrid } from "@/components/home/CategoryGrid";
+import { HeroStory } from "@/components/home/HeroStory";
 import { HomeBanner } from "@/components/home/HomeBanner";
+import { OriginBand } from "@/components/home/OriginBand";
 import { PostSection } from "@/components/home/PostSection";
 import { ProductSection } from "@/components/home/ProductSection";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
+const HOME_TITLE = "DanaFarm - Trà ngon & Cà phê sạch từ Cầu Đất";
+const HOME_DESCRIPTION =
+  "Khám phá trà, cà phê Cầu Đất, matcha, trái cây sấy và những hộp quà đặc sản từ DanaFarm.";
+
 export const metadata: Metadata = {
-  title: "DanaFarm - Trà ngon & Cà phê sạch từ Cầu Đất",
-  description:
-    "Khám phá trà, cà phê Cầu Đất, matcha, trái cây sấy và những hộp quà đặc sản từ DanaFarm.",
+  title: HOME_TITLE,
+  description: HOME_DESCRIPTION,
+  alternates: { canonical: "/" },
+  openGraph: { title: HOME_TITLE, description: HOME_DESCRIPTION, url: "/" },
 };
 
 const productRelations = {
@@ -56,7 +63,9 @@ export default async function HomePage() {
   return (
     <>
       <HomeBanner banners={banners} />
+      <HeroStory />
       <CategoryGrid categories={categories} />
+      <OriginBand />
       <ProductSection
         title="Sản Phẩm Nổi Bật"
         viewAllHref="/collections/all"

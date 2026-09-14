@@ -10,6 +10,7 @@ import {
     MessageSquare,
     Newspaper,
     Package,
+    Receipt,
     Settings,
     Store,
     Users,
@@ -25,6 +26,7 @@ const groups: NavGroup[] = [
     {
         title: "Cửa hàng",
         links: [
+            { label: "Đơn hàng", href: "/admin/orders", icon: Receipt },
             { label: "Sản phẩm", href: "/admin/products", icon: Package },
             { label: "Danh mục", href: "/admin/categories", icon: LayoutGrid },
         ],

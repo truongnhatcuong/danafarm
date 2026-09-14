@@ -9,7 +9,7 @@ export function ProductCard({ product }: { product: ProductWithRelations }) {
     const discount = discountPercent(product.price, product.compareAtPrice);
 
     return (
-        <div className="group relative bg-white rounded-xl border border-shop-border overflow-hidden hover:shadow-lg transition-shadow duration-300">
+        <div className="group relative bg-white rounded-xl border border-shop-border overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
             <Link
                 href={`/products/${product.slug}`}
                 className="block relative aspect-square overflow-hidden bg-shop-bg"

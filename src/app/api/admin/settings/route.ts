@@ -53,6 +53,11 @@ export async function PUT(request: Request) {
         zaloUrl: body.zaloUrl ? String(body.zaloUrl).trim() : null,
         messengerUrl: body.messengerUrl ? String(body.messengerUrl).trim() : null,
         freeShipThreshold: body.freeShipThreshold ? Number(body.freeShipThreshold) : 350000,
+        originLat: body.originLat !== undefined && body.originLat !== null && body.originLat !== "" ? Number(body.originLat) : null,
+        originLng: body.originLng !== undefined && body.originLng !== null && body.originLng !== "" ? Number(body.originLng) : null,
+        shippingBaseFee: body.shippingBaseFee ? Number(body.shippingBaseFee) : 20000,
+        shippingBaseKm: body.shippingBaseKm ? Number(body.shippingBaseKm) : 10,
+        shippingPerKmFee: body.shippingPerKmFee ? Number(body.shippingPerKmFee) : 3500,
     };
 
     try {

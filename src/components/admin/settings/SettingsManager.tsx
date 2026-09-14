@@ -2,15 +2,13 @@
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import {
-    Settings,
     Phone,
     Mail,
     Share2,
     Building2,
     Truck,
     Loader2,
-    CheckCircle2,
-    ExternalLink,
+    MapPinned,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -27,6 +25,11 @@ type SiteSetting = {
     zaloUrl: string | null;
     messengerUrl: string | null;
     freeShipThreshold: number | null;
+    originLat: number | null;
+    originLng: number | null;
+    shippingBaseFee: number;
+    shippingBaseKm: number;
+    shippingPerKmFee: number;
 };
 
 const fieldClass =
@@ -253,6 +256,81 @@ export function SettingsManager() {
                             <span className="mt-1 block text-xs text-admin-muted">
                                 Đơn hàng đạt từ mức giá này trở lên sẽ được áp dụng miễn phí giao hàng.
                             </span>
+                        </label>
+                    </div>
+                </section>
+
+                {/* 4. Vận chuyển theo khoảng cách */}
+                <section className="rounded-2xl border border-admin-border bg-admin-surface p-5 shadow-xs md:p-6">
+                    <div className="mb-5 flex items-center gap-3 border-b border-admin-border pb-4">
+                        <span className="grid size-9 place-items-center rounded-lg bg-emerald-50 text-emerald-700">
+                            <MapPinned size={18} />
+                        </span>
+                        <div>
+                            <h2 className="text-base font-bold text-admin-ink">Phí vận chuyển theo khoảng cách</h2>
+                            <p className="text-xs text-admin-muted">
+                                Toạ độ kho hàng và bậc phí ship áp dụng khi đơn hàng chưa đạt ngưỡng miễn phí ship ở trên.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <label className={labelClass}>
+                            Vĩ độ kho hàng (Latitude)
+                            <input
+                                type="number"
+                                step="0.0001"
+                                placeholder="11.8203"
+                                className={`${fieldClass} mt-1.5`}
+                                value={form.originLat ?? ""}
+                                onChange={(e) => setForm({ ...form, originLat: e.target.value === "" ? null : Number(e.target.value) })}
+                            />
+                        </label>
+                        <label className={labelClass}>
+                            Kinh độ kho hàng (Longitude)
+                            <input
+                                type="number"
+                                step="0.0001"
+                                placeholder="108.4830"
+                                className={`${fieldClass} mt-1.5`}
+                                value={form.originLng ?? ""}
+                                onChange={(e) => setForm({ ...form, originLng: e.target.value === "" ? null : Number(e.target.value) })}
+                            />
+                        </label>
+
+                        <label className={labelClass}>
+                            Phí cơ bản (VNĐ)
+                            <input
+                                type="number"
+                                min={0}
+                                step={1000}
+                                className={`${fieldClass} mt-1.5`}
+                                value={form.shippingBaseFee}
+                                onChange={(e) => setForm({ ...form, shippingBaseFee: Number(e.target.value) })}
+                            />
+                            <span className="mt-1 block text-xs text-admin-muted">Áp dụng cho quãng đường đầu tiên bên dưới.</span>
+                        </label>
+                        <label className={labelClass}>
+                            Quãng đường cơ bản (km)
+                            <input
+                                type="number"
+                                min={0}
+                                step={0.5}
+                                className={`${fieldClass} mt-1.5`}
+                                value={form.shippingBaseKm}
+                                onChange={(e) => setForm({ ...form, shippingBaseKm: Number(e.target.value) })}
+                            />
+                        </label>
+                        <label className={`${labelClass} sm:col-span-2`}>
+                            Phí mỗi km vượt quá (VNĐ/km)
+                            <input
+                                type="number"
+                                min={0}
+                                step={500}
+                                className={`${fieldClass} mt-1.5 max-w-sm`}
+                                value={form.shippingPerKmFee}
+                                onChange={(e) => setForm({ ...form, shippingPerKmFee: Number(e.target.value) })}
+                            />
                         </label>
                     </div>
                 </section>

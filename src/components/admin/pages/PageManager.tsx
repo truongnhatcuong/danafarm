@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { slugify } from "@/lib/utils";
+import { RichTextEditor } from "@/components/admin/posts/RichTextEditor";
 
 type PageItem = {
     id: number;
@@ -74,6 +75,10 @@ export function PageManager() {
 
     async function submit(e: FormEvent) {
         e.preventDefault();
+        if (form.content.replace(/<[^>]*>/g, "").trim().length === 0) {
+            toast.error("Vui lòng nhập nội dung trang.");
+            return;
+        }
         setBusy(true);
         const url = editing ? `/api/admin/pages/${editing}` : "/api/admin/pages";
         const res = await fetch(url, {
@@ -188,7 +193,7 @@ export function PageManager() {
             {/* Modal Soạn thảo Trang */}
             {drawerOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-[2px]">
-                    <div className="flex max-h-[92vh] w-full max-w-2xl flex-col rounded-2xl border border-admin-border bg-admin-surface shadow-2xl">
+                    <div className="flex max-h-[92vh] w-full max-w-3xl flex-col rounded-2xl border border-admin-border bg-admin-surface shadow-2xl">
                         <div className="flex items-center justify-between border-b border-admin-border px-5 py-4">
                             <div className="flex items-center gap-2.5">
                                 <span className="grid size-9 place-items-center rounded-lg bg-admin-accent-soft text-admin-accent">
@@ -233,17 +238,16 @@ export function PageManager() {
                                 </label>
                             </div>
 
-                            <label className="block text-sm font-medium text-admin-ink">
-                                Nội dung trang (Hỗ trợ HTML / Markdown) <span className="text-rose-500">*</span>
-                                <textarea
-                                    required
-                                    rows={10}
-                                    placeholder="Soạn thảo nội dung cho trang..."
-                                    className={`${fieldClass} mt-1.5 font-mono text-xs`}
-                                    value={form.content}
-                                    onChange={(e) => setForm({ ...form, content: e.target.value })}
-                                />
-                            </label>
+                            <div className="block text-sm font-medium text-admin-ink">
+                                Nội dung trang <span className="text-rose-500">*</span>
+                                <div className="mt-1.5">
+                                    <RichTextEditor
+                                        value={form.content}
+                                        onChange={(html) => setForm({ ...form, content: html })}
+                                        placeholder="Soạn thảo nội dung cho trang..."
+                                    />
+                                </div>
+                            </div>
 
                             <div className="flex justify-end gap-2.5 border-t border-admin-border pt-4">
                                 <button

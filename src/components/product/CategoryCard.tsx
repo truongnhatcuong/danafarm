@@ -6,7 +6,7 @@ export function CategoryCard({ category }: { category: Category }) {
     return (
         <Link
             href={`/collections/${category.slug}`}
-            className="group flex flex-col items-center text-center"
+            className="group flex flex-col items-center text-center transition-transform duration-300 hover:-translate-y-1"
         >
             <div className="relative w-full aspect-square rounded-xl overflow-hidden bg-shop-bg mb-3">
                 {category.imageUrl ? (

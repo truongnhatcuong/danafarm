@@ -64,6 +64,12 @@
   --home-collection2-title: #ff0000;
   --home-collection3-bg: #e9dabe;
 
+  /* Highland terrain — origin story band, Cầu Đất tea gardens */
+  --terrain-deep: #333f27;
+  --terrain-mid: #5c6b45;
+  --terrain-line: #74835a;
+  --terrain-card: rgba(255, 255, 255, 0.08);
+
   /* Footer */
   --footer-bg-color-1: #ffffff;
   --footer-bg-color-2: #ffffff;
@@ -128,6 +134,12 @@
   --color-footer-hover: var(--footer-color-hover);
 
   --font-sans: var(--font-quicksand);
+  --font-display: var(--font-fraunces);
+
+  --color-terrain-deep: var(--terrain-deep);
+  --color-terrain-mid: var(--terrain-mid);
+  --color-terrain-line: var(--terrain-line);
+  --color-terrain-card: var(--terrain-card);
 
   --color-admin-bg: var(--admin-bg);
   --color-admin-surface: var(--admin-surface);
@@ -198,4 +210,52 @@
 
 .animate-fade-in-up {
   animation: fade-in-up 0.5s ease-out both;
+}
+
+/* Hero story — staged entrance, plays once on load */
+@keyframes hero-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Facts ticker — one continuous ambient beat borrowed from drifting highland mist */
+@keyframes ticker-scroll {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hero-rise {
+    animation: hero-rise 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .ticker-track {
+    animation: ticker-scroll 26s linear infinite;
+  }
+
+  .ticker-track:hover {
+    animation-play-state: paused;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ticker-copy {
+    display: none;
+  }
+
+  .ticker-track {
+    flex-wrap: wrap;
+  }
 }

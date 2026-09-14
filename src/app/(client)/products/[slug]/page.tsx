@@ -4,9 +4,11 @@ import { notFound } from "next/navigation";
 import { PackageCheck, ShieldCheck, Truck } from "lucide-react";
 import { ProductImageGallery } from "@/components/product/ProductImageGallery";
 import { ProductVariantSelector } from "@/components/product/ProductVariantSelector";
+import { JsonLd } from "@/components/seo/JsonLd";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { Container } from "@/components/ui/Container";
 import { prisma } from "@/lib/prisma";
+import { absoluteUrl } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
@@ -21,17 +23,30 @@ export async function generateMetadata({
     select: { name: true, shortDescription: true, images: { take: 1 } },
   });
 
-  return product
-    ? {
-        title: `${product.name} | DanaFarm`,
-        description:
-          product.shortDescription ??
-          `Mua ${product.name} chính hãng tại DanaFarm.`,
-        openGraph: {
-          images: product.images[0]?.url ? [product.images[0].url] : [],
-        },
-      }
-    : { title: "Không tìm thấy sản phẩm | DanaFarm" };
+  if (!product) return { title: "Không tìm thấy sản phẩm | DanaFarm" };
+
+  const description =
+    product.shortDescription ?? `Mua ${product.name} chính hãng tại DanaFarm.`;
+  const path = `/products/${slug}`;
+  const imageUrl = product.images[0]?.url;
+
+  return {
+    title: product.name,
+    description,
+    alternates: { canonical: path },
+    openGraph: {
+      title: product.name,
+      description,
+      url: absoluteUrl(path),
+      images: imageUrl ? [imageUrl] : undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: product.name,
+      description,
+      images: imageUrl ? [imageUrl] : undefined,
+    },
+  };
 }
 
 export default async function ProductPage({ params }: ProductPageProps) {
@@ -50,8 +65,30 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const primaryCategory = product.categories[0];
   const primaryImage = product.images[0];
 
+  const productJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    description: product.shortDescription || product.name,
+    image: product.images.map((img) => img.url),
+    sku: product.sku || undefined,
+    category: primaryCategory?.name,
+    offers: {
+      "@type": "Offer",
+      url: absoluteUrl(`/products/${product.slug}`),
+      priceCurrency: "VND",
+      price: String(product.price),
+      availability:
+        product.quantity > 0
+          ? "https://schema.org/InStock"
+          : "https://schema.org/OutOfStock",
+      itemCondition: "https://schema.org/NewCondition",
+    },
+  };
+
   return (
     <>
+      <JsonLd data={productJsonLd} />
       <Breadcrumb
         items={[
           ...(primaryCategory

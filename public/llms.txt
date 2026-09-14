@@ -1,0 +1,28 @@
+# DanaFarm
+
+> DanaFarm là thương hiệu trà và cà phê sạch có nguồn gốc từ Cầu Đất, Đà Lạt, Việt Nam. Chuyên cung cấp trà (trà Oolong, trà lài, trà sen, trà xanh, trà hoa - thảo mộc, trà đen), cà phê Cầu Đất (bột, phin giấy, nguyên hạt), bột matcha, trái cây sấy và hạt dinh dưỡng, bán trực tiếp trên website và giao hàng toàn quốc.
+
+## Sản phẩm & danh mục
+- Tất cả sản phẩm: /collections/all
+- Trà Ngon: /collections/tra
+- Cà Phê Cầu Đất: /collections/ca-phe-cau-dat
+- Bột Matcha: /collections/bot-matcha
+- Trái Cây Sấy: /collections/dac-san-da-lat-1
+- Hạt Dinh Dưỡng: /collections/hat-dinh-duong
+- Hộp Quà DanaFarm: /collections/hop-qua-tra-ca-phe-dalatfarm
+
+## Thông tin công ty & chính sách
+- Giới thiệu: /pages/gioi-thieu-dalat-farm
+- Chính sách giao hàng: /pages/chinh-sach-giao-hang
+- Chính sách đổi trả: /pages/chinh-sach-doi-tra
+- Chính sách bảo mật: /pages/chinh-sach-bao-mat
+- Điều khoản dịch vụ: /pages/dieu-khoan-dich-vu
+- Liên hệ: /pages/lien-he
+
+## Tin tức
+- Bài viết & tin tức: /blogs/news
+
+## Đặt hàng
+- Giỏ hàng: /cart
+- Thanh toán: COD (thanh toán khi nhận hàng) hoặc chuyển khoản ngân hàng.
+- Miễn phí vận chuyển áp dụng theo giá trị đơn hàng tối thiểu (xem chi tiết tại trang chính sách giao hàng).

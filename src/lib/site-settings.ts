@@ -16,7 +16,20 @@ export interface PublicSiteSettings {
   zaloUrl: string;
   messengerUrl: string;
   freeShipThreshold: number;
+  originLat: number | null;
+  originLng: number | null;
+  shippingBaseFee: number;
+  shippingBaseKm: number;
+  shippingPerKmFee: number;
 }
+
+const SHIPPING_DEFAULTS = {
+  originLat: 11.8203,
+  originLng: 108.483,
+  shippingBaseFee: 20000,
+  shippingBaseKm: 10,
+  shippingPerKmFee: 3500,
+};
 
 export const getPublicSiteSettings = cache(
   async (): Promise<PublicSiteSettings> => {
@@ -35,10 +48,15 @@ export const getPublicSiteSettings = cache(
           zaloUrl: true,
           messengerUrl: true,
           freeShipThreshold: true,
+          originLat: true,
+          originLng: true,
+          shippingBaseFee: true,
+          shippingBaseKm: true,
+          shippingPerKmFee: true,
         },
       });
 
-      if (!setting) return SITE_INFO;
+      if (!setting) return { ...SITE_INFO, ...SHIPPING_DEFAULTS };
 
       return {
         companyName: setting.companyName || SITE_INFO.companyName,
@@ -54,10 +72,15 @@ export const getPublicSiteSettings = cache(
         messengerUrl: setting.messengerUrl || SITE_INFO.messengerUrl,
         freeShipThreshold:
           setting.freeShipThreshold ?? SITE_INFO.freeShipThreshold,
+        originLat: setting.originLat,
+        originLng: setting.originLng,
+        shippingBaseFee: setting.shippingBaseFee,
+        shippingBaseKm: setting.shippingBaseKm,
+        shippingPerKmFee: setting.shippingPerKmFee,
       };
     } catch (error) {
       console.error("Unable to load public site settings", error);
-      return SITE_INFO;
+      return { ...SITE_INFO, ...SHIPPING_DEFAULTS };
     }
   },
 );

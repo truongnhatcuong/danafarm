@@ -10,11 +10,14 @@ import {
     Package,
     Phone,
     PlusCircle,
+    Receipt,
     TrendingDown,
     TrendingUp,
     Users,
+    Wallet,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { RevenueChart } from "@/components/admin/dashboard/RevenueChart";
 import { prisma } from "@/lib/prisma";
 
 const DAY_MS = 86_400_000;
@@ -33,6 +36,30 @@ async function countWithTrend(
     ]);
 
     return { total, current, previous };
+}
+
+async function revenueWithTrend() {
+    const now = new Date();
+    const start30 = new Date(now.getTime() - 30 * DAY_MS);
+    const start60 = new Date(now.getTime() - 60 * DAY_MS);
+
+    const [totalAgg, currentAgg, previousAgg] = await Promise.all([
+        prisma.order.aggregate({ _sum: { total: true }, where: { status: { not: "CANCELLED" } } }),
+        prisma.order.aggregate({
+            _sum: { total: true },
+            where: { status: { not: "CANCELLED" }, createdAt: { gte: start30 } },
+        }),
+        prisma.order.aggregate({
+            _sum: { total: true },
+            where: { status: { not: "CANCELLED" }, createdAt: { gte: start60, lt: start30 } },
+        }),
+    ]);
+
+    return {
+        total: totalAgg._sum.total ?? 0,
+        current: currentAgg._sum.total ?? 0,
+        previous: previousAgg._sum.total ?? 0,
+    };
 }
 
 function trendBadge({ current, previous }: { current: number; previous: number }) {
@@ -68,25 +95,62 @@ function timeAgo(date: Date) {
     return date.toLocaleDateString("vi-VN");
 }
 
-export default async function AdminDashboardPage() {
-    const [productStats, categoryStats, postStats, userStats, contactStats, recentProducts, recentContacts] =
-        await Promise.all([
-            countWithTrend(prisma.product),
-            countWithTrend(prisma.category),
-            countWithTrend(prisma.post),
-            countWithTrend({
-                count: (args) => prisma.user.count({ ...args, where: { ...args?.where, role: "CUSTOMER" } }),
-            }),
-            countWithTrend(prisma.contactMessage),
-            prisma.product.findMany({
-                take: 5,
-                orderBy: { createdAt: "desc" },
-                select: { id: true, name: true, slug: true, price: true, status: true, quantity: true },
-            }),
-            prisma.contactMessage.findMany({ take: 5, orderBy: { createdAt: "desc" } }),
-        ]);
+const ORDER_STATUS_LABEL: Record<string, string> = {
+    PENDING: "Chờ xác nhận",
+    CONFIRMED: "Đã xác nhận",
+    PACKING: "Đang đóng gói",
+    SHIPPING: "Đang giao hàng",
+    DELIVERED: "Đã giao hàng",
+    CANCELLED: "Đã hủy",
+};
 
-    const kpis: { label: string; icon: LucideIcon; stats: { total: number; current: number; previous: number } }[] = [
+const ORDER_STATUS_CLASS: Record<string, string> = {
+    PENDING: "bg-amber-50 text-amber-700",
+    CONFIRMED: "bg-blue-50 text-blue-700",
+    PACKING: "bg-indigo-50 text-indigo-700",
+    SHIPPING: "bg-sky-50 text-sky-700",
+    DELIVERED: "bg-emerald-50 text-emerald-700",
+    CANCELLED: "bg-rose-50 text-rose-700",
+};
+
+export default async function AdminDashboardPage() {
+    const [
+        productStats,
+        categoryStats,
+        postStats,
+        userStats,
+        contactStats,
+        orderStats,
+        revenueStats,
+        recentProducts,
+        recentContacts,
+        recentOrders,
+    ] = await Promise.all([
+        countWithTrend(prisma.product),
+        countWithTrend(prisma.category),
+        countWithTrend(prisma.post),
+        countWithTrend({
+            count: (args) => prisma.user.count({ ...args, where: { ...args?.where, role: "CUSTOMER" } }),
+        }),
+        countWithTrend(prisma.contactMessage),
+        countWithTrend(prisma.order),
+        revenueWithTrend(),
+        prisma.product.findMany({
+            take: 5,
+            orderBy: { createdAt: "desc" },
+            select: { id: true, name: true, slug: true, price: true, status: true, quantity: true },
+        }),
+        prisma.contactMessage.findMany({ take: 5, orderBy: { createdAt: "desc" } }),
+        prisma.order.findMany({
+            take: 5,
+            orderBy: { createdAt: "desc" },
+            select: { id: true, code: true, status: true, total: true, recipientName: true, createdAt: true },
+        }),
+    ]);
+
+    const kpis: { label: string; icon: LucideIcon; stats: { total: number; current: number; previous: number }; isCurrency?: boolean }[] = [
+        { label: "Doanh thu", icon: Wallet, stats: revenueStats, isCurrency: true },
+        { label: "Đơn hàng", icon: Receipt, stats: orderStats },
         { label: "Sản phẩm", icon: Package, stats: productStats },
         { label: "Danh mục", icon: LayoutGrid, stats: categoryStats },
         { label: "Bài viết", icon: Newspaper, stats: postStats },
@@ -95,6 +159,7 @@ export default async function AdminDashboardPage() {
     ];
 
     const quickActions = [
+        { label: "Xem đơn hàng", description: "Xử lý và cập nhật trạng thái đơn", href: "/admin/orders", icon: Receipt },
         { label: "Thêm sản phẩm", description: "Tạo sản phẩm mới cho cửa hàng", href: "/admin/products", icon: Package },
         { label: "Thêm danh mục", description: "Sắp xếp lại nhóm sản phẩm", href: "/admin/categories", icon: LayoutGrid },
         { label: "Viết bài mới", description: "Đăng tin tức hoặc bài viết", href: "/admin/posts", icon: FileText },
@@ -108,8 +173,37 @@ export default async function AdminDashboardPage() {
                 <p className="mt-1 text-sm text-admin-muted">Theo dõi hoạt động và quản lý dữ liệu DanaFarm.</p>
             </header>
 
+            <section className="grid gap-4 sm:grid-cols-2">
+                {kpis.slice(0, 2).map(({ label, icon: Icon, stats, isCurrency }) => {
+                    const badge = trendBadge(stats);
+                    const { icon: TrendIcon, className } = toneStyles[badge.tone];
+                    return (
+                        <article key={label} className="rounded-2xl border border-admin-border bg-admin-surface p-5">
+                            <div className="flex items-center justify-between">
+                                <span className="grid size-11 place-items-center rounded-xl bg-admin-accent-soft text-admin-accent">
+                                    <Icon size={20} />
+                                </span>
+                                <span
+                                    className={`flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold ${className}`}
+                                    title={badge.label}
+                                >
+                                    <TrendIcon size={13} />
+                                    {badge.tone === "flat" ? "0%" : badge.label.split(" ")[0]}
+                                </span>
+                            </div>
+                            <strong className="mt-4 block text-3xl font-bold text-admin-ink">
+                                {isCurrency ? currency(stats.total) : stats.total}
+                            </strong>
+                            <p className="mt-1 text-sm text-admin-muted">{label} (tổng cộng)</p>
+                        </article>
+                    );
+                })}
+            </section>
+
+            <RevenueChart />
+
             <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-                {kpis.map(({ label, icon: Icon, stats }) => {
+                {kpis.slice(2).map(({ label, icon: Icon, stats }) => {
                     const badge = trendBadge(stats);
                     const { icon: TrendIcon, className } = toneStyles[badge.tone];
                     return (
@@ -160,7 +254,38 @@ export default async function AdminDashboardPage() {
                 </div>
             </section>
 
-            <section className="grid gap-5 xl:grid-cols-2">
+            <section className="grid gap-5 xl:grid-cols-3">
+                <div className="rounded-2xl border border-admin-border bg-admin-surface">
+                    <div className="flex items-center justify-between border-b border-admin-border px-5 py-4">
+                        <h2 className="text-sm font-semibold text-admin-ink">Đơn hàng gần đây</h2>
+                        <Link href="/admin/orders" className="flex items-center gap-1 text-xs font-medium text-admin-accent hover:underline">
+                            Xem tất cả <ArrowUpRight size={13} />
+                        </Link>
+                    </div>
+                    {recentOrders.length === 0 ? (
+                        <p className="px-5 py-8 text-center text-sm text-admin-muted">Chưa có đơn hàng nào.</p>
+                    ) : (
+                        <ul>
+                            {recentOrders.map((order) => (
+                                <li key={order.id} className="border-b border-admin-border px-5 py-3 last:border-none">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <Link href={`/admin/orders/${order.id}`} className="truncate text-sm font-medium text-admin-ink hover:text-admin-accent hover:underline">
+                                            #{order.code}
+                                        </Link>
+                                        <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${ORDER_STATUS_CLASS[order.status] ?? "bg-gray-100 text-gray-700"}`}>
+                                            {ORDER_STATUS_LABEL[order.status] ?? order.status}
+                                        </span>
+                                    </div>
+                                    <div className="mt-0.5 flex items-center justify-between gap-3">
+                                        <p className="truncate text-xs text-admin-muted">{order.recipientName}</p>
+                                        <span className="shrink-0 text-sm font-semibold text-admin-ink">{currency(order.total)}</span>
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </div>
+
                 <div className="rounded-2xl border border-admin-border bg-admin-surface">
                     <div className="flex items-center justify-between border-b border-admin-border px-5 py-4">
                         <h2 className="text-sm font-semibold text-admin-ink">Sản phẩm gần đây</h2>

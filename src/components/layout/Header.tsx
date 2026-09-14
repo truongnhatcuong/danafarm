@@ -142,11 +142,12 @@ export async function Header() {
                       • &nbsp;Tài khoản của tôi
                     </Link>
                     <Link
-                      href="/account/addresses"
+                      href="/account/orders"
                       className="block rounded-md px-3 py-2 text-sm hover:bg-shop-bg hover:text-shop-main"
                     >
-                      • &nbsp;Danh sách địa chỉ
+                      • &nbsp;Đơn hàng của tôi
                     </Link>
+
                     <div className="pl-3">
                       <NavLogoutButton />
                     </div>

@@ -149,6 +149,11 @@ model SiteSetting {
   zaloUrl             String?
   messengerUrl        String?
   freeShipThreshold   Int?     @default(350000)
+  originLat           Float?   @default(11.8203)
+  originLng           Float?   @default(108.4830)
+  shippingBaseFee     Int      @default(20000)
+  shippingBaseKm      Float    @default(10)
+  shippingPerKmFee    Int      @default(3500)
   updatedAt           DateTime @updatedAt
 }
 
@@ -180,10 +185,96 @@ model User {
   phone        String?
   role         UserRole  @default(CUSTOMER)
   sessions     Session[]
+  addresses    Address[]
+  orders       Order[]
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
   @@index([role])
+}
+
+model Address {
+  id            Int      @id @default(autoincrement())
+  userId        Int
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipientName String
+  phone         String
+  provinceCode  String
+  provinceName  String
+  wardCode      String
+  wardName      String
+  addressLine   String   @db.Text
+  latitude      Float?
+  longitude     Float?
+  isDefault     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+// Orders
+// ---------------------------------------------------------------------------
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PACKING
+  SHIPPING
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  COD
+  BANK_TRANSFER
+}
+
+model Order {
+  id            Int           @id @default(autoincrement())
+  code          String        @unique
+  userId        Int
+  user          User          @relation(fields: [userId], references: [id])
+  status        OrderStatus   @default(PENDING)
+  paymentMethod PaymentMethod @default(COD)
+  recipientName String
+  phone         String
+  provinceName  String
+  wardName      String
+  addressLine   String        @db.Text
+  latitude      Float?
+  longitude     Float?
+  distanceKm    Float?
+  note          String?       @db.Text
+  subtotal      Int
+  shippingFee   Int
+  discount      Int           @default(0)
+  total         Int
+  items         OrderItem[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+model OrderItem {
+  id          Int     @id @default(autoincrement())
+  orderId     Int
+  order       Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   Int
+  productName String
+  variantId   Int?
+  variantName String?
+  imageUrl    String?
+  unitLabel   String?
+  price       Int
+  quantity    Int
+  lineTotal   Int
+
+  @@index([orderId])
+  @@index([productId])
 }
 
 model Session {

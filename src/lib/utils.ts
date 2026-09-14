@@ -111,3 +111,22 @@ export function generateVariantSku(parentSku: string, variantName: string, index
     return `${base}-${cleanVariant || `V${index}`}`;
 }
 
+/**
+ * Sinh mã đơn hàng: DH + ngày (yyMMdd) + 4 ký tự ngẫu nhiên.
+ * Ví dụ: DH2409159K4A
+ */
+export function generateOrderCode(): string {
+    const now = new Date();
+    const yy = String(now.getFullYear()).slice(2);
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const dd = String(now.getDate()).padStart(2, "0");
+
+    const chars = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
+    let rand = "";
+    for (let i = 0; i < 4; i++) {
+        rand += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+
+    return `DH${yy}${mm}${dd}${rand}`;
+}
+
