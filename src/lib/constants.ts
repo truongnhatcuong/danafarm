@@ -72,8 +72,7 @@ export const SITE_INFO = {
     "Trụ Sở: Số 159 Suối Thông B1, Xã Đơn Dương, Tỉnh Lâm Đồng, Việt Nam",
   phone: "0385250680",
   email: "info@dalatfarm1994.com",
-  logoUrl:
-    "https://theme.hstatic.net/200000076583/1001285352/14/logo.png?v=503",
+  logoUrl: "/logo.png",
   facebookUrl: "https://www.facebook.com/Dalatfarm1994",
   zaloUrl: "https://zalo.me/0385250680",
   messengerUrl: "https://m.me/Dalatfarmsince1994",

@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { Menu, ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -81,13 +80,6 @@ export function CategoryNavMenu({
   const [isOpen, setIsOpen] = useState(false);
   const [activeSlug, setActiveSlug] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-  const pathname = usePathname();
-
-  // Close when route changes
-  useEffect(() => {
-    setIsOpen(false);
-    setActiveSlug(null);
-  }, [pathname]);
 
   // Handle click outside and Escape key
   useEffect(() => {
@@ -164,8 +156,8 @@ export function CategoryNavMenu({
             // Keep current active category so menu doesn't jitter
           }}
         >
-          {/* Left Panel: Parent Categories */}
-          <div className="w-64 py-2 bg-white flex flex-col shrink-0">
+          {/* Left Panel: Parent Categories — 2 columns to avoid an overly tall menu */}
+          <div className="grid w-[32rem] shrink-0 grid-cols-2 content-start gap-x-1 bg-white py-2">
             {categories.map((cat) => {
               const hasChildren = Boolean(
                 cat.children && cat.children.length > 0,

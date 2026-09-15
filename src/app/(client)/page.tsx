@@ -29,51 +29,60 @@ const productRelations = {
 
 export default async function HomePage() {
   const now = new Date();
-  const [banners, categories, featuredProducts, newProducts, posts, voucherRows] =
-    await Promise.all([
-      prisma.banner.findMany({
-        where: { isActive: true },
-        orderBy: { position: "asc" },
-      }),
-      prisma.category.findMany({
-        where: { parentId: null },
-        include: {
-          children: { orderBy: { position: "asc" } },
-          _count: { select: { products: true } },
-        },
-        orderBy: { position: "asc" },
-        take: 6,
-      }),
-      prisma.product.findMany({
-        where: { status: "active", isFeatured: true },
-        include: productRelations,
-        orderBy: { createdAt: "desc" },
-        take: 8,
-      }),
-      prisma.product.findMany({
-        where: { status: "active", isNew: true },
-        include: productRelations,
-        orderBy: { createdAt: "desc" },
-        take: 8,
-      }),
-      prisma.post.findMany({
-        orderBy: { publishedAt: "desc" },
-        take: 4,
-      }),
-      prisma.voucher.findMany({
-        where: {
-          isActive: true,
-          showOnHomepage: true,
-          startsAt: { lte: now },
-          expiresAt: { gte: now },
-        },
-        orderBy: [{ position: "asc" }, { createdAt: "desc" }],
-        take: 8,
-      }),
-    ]);
+  const [
+    banners,
+    categories,
+    featuredProducts,
+    newProducts,
+    posts,
+    voucherRows,
+  ] = await Promise.all([
+    prisma.banner.findMany({
+      where: { isActive: true },
+      orderBy: { position: "asc" },
+    }),
+    prisma.category.findMany({
+      where: { parentId: null },
+      include: {
+        children: { orderBy: { position: "asc" } },
+        _count: { select: { products: true } },
+      },
+      orderBy: { position: "asc" },
+      take: 8,
+    }),
+    prisma.product.findMany({
+      where: { status: "active", isFeatured: true },
+      include: productRelations,
+      orderBy: { createdAt: "desc" },
+      take: 4,
+    }),
+    prisma.product.findMany({
+      where: { status: "active", isNew: true },
+      include: productRelations,
+      orderBy: { createdAt: "desc" },
+      take: 4,
+    }),
+    prisma.post.findMany({
+      orderBy: { publishedAt: "desc" },
+      take: 4,
+    }),
+    prisma.voucher.findMany({
+      where: {
+        isActive: true,
+        showOnHomepage: true,
+        startsAt: { lte: now },
+        expiresAt: { gte: now },
+      },
+      orderBy: [{ position: "asc" }, { createdAt: "desc" }],
+      take: 8,
+    }),
+  ]);
 
   const vouchers = voucherRows
-    .filter((voucher) => voucher.usageLimit == null || voucher.usedCount < voucher.usageLimit)
+    .filter(
+      (voucher) =>
+        voucher.usageLimit == null || voucher.usedCount < voucher.usageLimit,
+    )
     .slice(0, 8)
     .map((voucher) => ({
       id: voucher.id,

@@ -129,7 +129,7 @@ export function MobileMenu({
                       </div>
                       <span>{item.label}</span>
                     </Link>
-                    {item.children && (
+                    {item.children && item.children.length > 0 && (
                       <button
                         aria-label={`Mở rộng ${item.label}`}
                         className="p-3 text-shop-title hover:text-shop-main transition-colors"
@@ -146,20 +146,22 @@ export function MobileMenu({
                       </button>
                     )}
                   </div>
-                  {item.children && openSub === item.slug && (
-                    <div className="pl-4 pb-2 bg-shop-bg/40 rounded-lg my-1">
-                      {item.children.map((child) => (
-                        <Link
-                          key={child.slug}
-                          href={`/collections/${child.slug}`}
-                          onClick={() => setOpen(false)}
-                          className="block py-2 px-2 text-sm !text-shop-text hover:!text-shop-main transition-colors"
-                        >
-                          {child.label}
-                        </Link>
-                      ))}
-                    </div>
-                  )}
+                  {item.children &&
+                    item.children.length > 0 &&
+                    openSub === item.slug && (
+                      <div className="pl-4 pb-2 bg-shop-bg/40 rounded-lg my-1">
+                        {item.children.map((child) => (
+                          <Link
+                            key={child.slug}
+                            href={`/collections/${child.slug}`}
+                            onClick={() => setOpen(false)}
+                            className="block py-2 px-2 text-sm !text-shop-text hover:!text-shop-main transition-colors"
+                          >
+                            {child.label}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
                 </div>
               ))}
             </nav>

@@ -73,12 +73,12 @@ export async function Header() {
           <MobileMenu categories={categories} />
           <Link href="/" className="shrink-0" aria-label="DanaFarm - Trang chủ">
             <Image
-              src={"/logo.png"}
-              alt="DanaFarm"
+              src={siteInfo.logoUrl}
+              alt={siteInfo.companyName}
               width={150}
               height={75}
               quality={100}
-              className="h-10 w-auto brightness-0 invert md:h-[67px] 2xl:h-[55px]"
+              className="h-10 w-auto brightness-0 invert md:h-[67px] 2xl:h-[50px]"
               priority
             />
           </Link>
@@ -141,12 +141,21 @@ export async function Header() {
                     >
                       • &nbsp;Tài khoản của tôi
                     </Link>
-                    <Link
-                      href="/account/orders"
-                      className="block rounded-md px-3 py-2 text-sm hover:bg-shop-bg hover:text-shop-main"
-                    >
-                      • &nbsp;Đơn hàng của tôi
-                    </Link>
+                    {user.role === "ADMIN" ? (
+                      <Link
+                        href="/admin"
+                        className="block rounded-md px-3 py-2 text-sm hover:bg-shop-bg hover:text-shop-main"
+                      >
+                        • &nbsp;Quản trị website
+                      </Link>
+                    ) : (
+                      <Link
+                        href="/account/orders"
+                        className="block rounded-md px-3 py-2 text-sm hover:bg-shop-bg hover:text-shop-main"
+                      >
+                        • &nbsp;Đơn hàng của tôi
+                      </Link>
+                    )}
 
                     <div className="pl-3">
                       <NavLogoutButton />
