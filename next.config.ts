@@ -46,6 +46,11 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "bizweb.dktcdn.net",
       },
+      {
+        protocol: "https",
+        hostname: "danagreenfarm.com",
+        pathname: "/wp-content/uploads/**",
+      },
     ],
   },
 };
