@@ -77,6 +77,9 @@ export const SITE_INFO = {
   zaloUrl: "https://zalo.me/0385250680",
   messengerUrl: "https://m.me/Dalatfarmsince1994",
   freeShipThreshold: 350000,
+  bankId: "MB",
+  bankAccountNo: "0385250680",
+  bankAccountName: "CONG TY TNHH DANAFARM",
 };
 
 export const TOP_BAR_MESSAGES = [

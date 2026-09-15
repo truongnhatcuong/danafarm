@@ -21,6 +21,9 @@ export interface PublicSiteSettings {
   shippingBaseFee: number;
   shippingBaseKm: number;
   shippingPerKmFee: number;
+  bankId: string | null;
+  bankAccountNo: string | null;
+  bankAccountName: string | null;
 }
 
 const SHIPPING_DEFAULTS = {
@@ -53,6 +56,9 @@ export const getPublicSiteSettings = cache(
           shippingBaseFee: true,
           shippingBaseKm: true,
           shippingPerKmFee: true,
+          bankId: true,
+          bankAccountNo: true,
+          bankAccountName: true,
         },
       });
 
@@ -77,6 +83,9 @@ export const getPublicSiteSettings = cache(
         shippingBaseFee: setting.shippingBaseFee,
         shippingBaseKm: setting.shippingBaseKm,
         shippingPerKmFee: setting.shippingPerKmFee,
+        bankId: setting.bankId || SITE_INFO.bankId,
+        bankAccountNo: setting.bankAccountNo || SITE_INFO.bankAccountNo,
+        bankAccountName: setting.bankAccountName || SITE_INFO.bankAccountName,
       };
     } catch (error) {
       console.error("Unable to load public site settings", error);

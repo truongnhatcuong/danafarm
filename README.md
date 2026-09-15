@@ -30,7 +30,11 @@ UPSTASH_REDIS_REST_URL="https://YOUR-DATABASE.upstash.io"
 UPSTASH_REDIS_REST_TOKEN="YOUR_UPSTASH_REST_TOKEN"
 ```
 
-Replace every value with the real credentials. `DATABASE_URL` is used by Prisma. The two Upstash variables enable distributed API rate limiting across all Next.js instances. If they are omitted, development still works with an in-memory fallback, but that fallback is not sufficient for horizontally scaled production deployments.
+Replace every value with the real credentials:
+
+- `DATABASE_URL`: chuỗi kết nối MySQL / TiDB.
+- `UPSTASH_REDIS_*`: rate limiting phân tán.
+- Cấu hình tài khoản ngân hàng nhận thanh toán chuyển khoản VietQR: Cấu hình trực tiếp tại trang quản trị **Admin Settings** (`/admin/settings`) gồm Ngân hàng, Số tài khoản và Tên chủ tài khoản kèm xem trước mã QR live.
 
 ## Installation
 

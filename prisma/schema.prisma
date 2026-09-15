@@ -154,6 +154,9 @@ model SiteSetting {
   shippingBaseFee     Int      @default(20000)
   shippingBaseKm      Float    @default(10)
   shippingPerKmFee    Int      @default(3500)
+  bankId              String?  @default("MB")
+  bankAccountNo       String?  @default("0385250680")
+  bankAccountName     String?  @default("CONG TY TNHH DANAFARM")
   updatedAt           DateTime @updatedAt
 }
 
@@ -263,6 +266,13 @@ enum PaymentMethod {
   BANK_TRANSFER
 }
 
+enum PaymentStatus {
+  PENDING
+  PAID
+  CANCELLED
+  FAILED
+}
+
 model Order {
   id            Int           @id @default(autoincrement())
   code          String        @unique
@@ -270,6 +280,8 @@ model Order {
   user          User          @relation(fields: [userId], references: [id])
   status        OrderStatus   @default(PENDING)
   paymentMethod PaymentMethod @default(COD)
+  paymentStatus PaymentStatus @default(PENDING)
+  paidAt        DateTime?
   recipientName String
   phone         String
   provinceName  String
@@ -293,6 +305,7 @@ model Order {
 
   @@index([userId])
   @@index([status])
+  @@index([paymentStatus])
   @@index([voucherId])
 }
 

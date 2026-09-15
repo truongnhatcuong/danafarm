@@ -11,6 +11,7 @@ import {
   Loader2,
   MapPinned,
   Image as ImageIcon,
+  QrCode,
 } from "lucide-react";
 import { toast } from "sonner";
 import { UploadButton } from "@/lib/uploadthing-client";
@@ -34,7 +35,28 @@ type SiteSetting = {
   shippingBaseFee: number;
   shippingBaseKm: number;
   shippingPerKmFee: number;
+  bankId: string | null;
+  bankAccountNo: string | null;
+  bankAccountName: string | null;
 };
+
+const POPULAR_BANKS = [
+  { id: "MB", name: "MBBank - Ngân hàng Quân Đội (MB)" },
+  { id: "VCB", name: "Vietcombank - Ngân hàng Ngoại Thương" },
+  { id: "ICB", name: "VietinBank - Ngân hàng Công Thương" },
+  { id: "TCB", name: "Techcombank - Ngân hàng Kỹ Thương" },
+  { id: "BIDV", name: "BIDV - Đầu tư & Phát triển VN" },
+  { id: "ACB", name: "ACB - Ngân hàng Á Châu" },
+  { id: "VPB", name: "VPBank - Ngân hàng VN Thịnh Vượng" },
+  { id: "TPB", name: "TPBank - Ngân hàng Tiên Phong" },
+  { id: "STB", name: "Sacombank - Sài Gòn Thương Tín" },
+  { id: "VIB", name: "VIB - Ngân hàng Quốc tế" },
+  { id: "HDB", name: "HDBank - Phát triển TP.HCM" },
+  { id: "OCB", name: "OCB - Ngân hàng Phương Đông" },
+  { id: "MSB", name: "MSB - Ngân hàng Hàng Hải" },
+  { id: "SHB", name: "SHB - Sài Gòn - Hà Nội" },
+  { id: "VBA", name: "Agribank - Nông nghiệp & PTNT" },
+];
 
 const fieldClass =
   "w-full rounded-lg border border-admin-border bg-admin-surface px-3.5 py-2.5 text-sm text-admin-ink outline-none focus:border-admin-accent transition";
@@ -511,6 +533,111 @@ export function SettingsManager() {
                 }
               />
             </label>
+          </div>
+        </section>
+
+        {/* 5. Cấu hình tài khoản ngân hàng nhận thanh toán (VietQR) */}
+        <section className="rounded-2xl border border-admin-border bg-admin-surface p-5 shadow-xs md:p-6">
+          <div className="mb-5 flex items-center gap-3 border-b border-admin-border pb-4">
+            <span className="grid size-9 place-items-center rounded-lg bg-indigo-50 text-indigo-700">
+              <QrCode size={18} />
+            </span>
+            <div>
+              <h2 className="text-base font-bold text-admin-ink">
+                Tài khoản ngân hàng nhận thanh toán (VietQR)
+              </h2>
+              <p className="text-xs text-admin-muted">
+                Thông tin này dùng để tự động tạo mã QR VietQR khi khách hàng
+                chọn thanh toán chuyển khoản.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-[1fr_260px]">
+            <div className="space-y-4">
+              <label className={labelClass}>
+                Ngân hàng thụ hưởng
+                <select
+                  className={`${fieldClass} mt-1.5`}
+                  value={form.bankId ?? "MB"}
+                  onChange={(e) => setForm({ ...form, bankId: e.target.value })}
+                >
+                  {POPULAR_BANKS.map((bank) => (
+                    <option key={bank.id} value={bank.id}>
+                      {bank.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className={labelClass}>
+                  Số tài khoản ngân hàng{" "}
+                  <span className="text-rose-500">*</span>
+                  <input
+                    required
+                    placeholder="Ví dụ: 0385250680"
+                    className={`${fieldClass} mt-1.5 font-mono`}
+                    value={form.bankAccountNo ?? ""}
+                    onChange={(e) =>
+                      setForm({ ...form, bankAccountNo: e.target.value })
+                    }
+                  />
+                </label>
+
+                <label className={labelClass}>
+                  Tên chủ tài khoản (In hoa không dấu){" "}
+                  <span className="text-rose-500">*</span>
+                  <input
+                    required
+                    placeholder="Ví dụ: CONG TY TNHH DANAFARM"
+                    className={`${fieldClass} mt-1.5 uppercase`}
+                    value={form.bankAccountName ?? ""}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        bankAccountName: e.target.value.toUpperCase(),
+                      })
+                    }
+                  />
+                </label>
+              </div>
+
+              <div className="rounded-xl border border-blue-100 bg-blue-50/60 p-3.5 text-xs text-blue-800">
+                💡 <strong>Cách thức hoạt động:</strong> Khi khách hàng đặt mua
+                và chọn phương thức Chuyển khoản qua QR, hệ thống sẽ sử dụng
+                chuẩn <strong>VietQR</strong> của NAPAS để tạo mã QR chứa chính
+                xác số tiền và mã đơn hàng. Khách chỉ cần mở app ngân hàng quét
+                mã là xong.
+              </div>
+            </div>
+
+            {/* Live preview mã QR VietQR */}
+            <div className="flex flex-col items-center justify-center rounded-xl border border-admin-border bg-admin-bg/40 p-4 text-center">
+              <span className="mb-2 text-xs font-semibold text-admin-ink">
+                Xem trước mã QR mẫu
+              </span>
+              {form.bankId && form.bankAccountNo ? (
+                <div className="space-y-2">
+                  <div className="relative mx-auto size-48 overflow-hidden rounded-lg border border-admin-border bg-white shadow-xs">
+                    <img
+                      src={`https://img.vietqr.io/image/${form.bankId}-${form.bankAccountNo}-compact2.png?amount=50000&addInfo=DANAFARM&accountName=${encodeURIComponent(
+                        form.bankAccountName || "",
+                      )}`}
+                      alt="VietQR Preview"
+                      className="size-full object-contain p-1"
+                    />
+                  </div>
+                  <p className="text-[11px] text-admin-muted">
+                    {form.bankId} · {form.bankAccountNo}
+                  </p>
+                </div>
+              ) : (
+                <div className="grid size-48 place-items-center rounded-lg border border-dashed border-admin-border text-xs text-admin-muted">
+                  Chưa đủ thông tin tạo QR
+                </div>
+              )}
+            </div>
           </div>
         </section>
 

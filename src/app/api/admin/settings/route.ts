@@ -25,6 +25,9 @@ export async function GET() {
         zaloUrl: SITE_INFO.zaloUrl,
         messengerUrl: SITE_INFO.messengerUrl,
         freeShipThreshold: SITE_INFO.freeShipThreshold,
+        bankId: SITE_INFO.bankId,
+        bankAccountNo: SITE_INFO.bankAccountNo,
+        bankAccountName: SITE_INFO.bankAccountName,
       },
     });
   }
@@ -82,6 +85,13 @@ export async function PUT(request: Request) {
     shippingPerKmFee: body.shippingPerKmFee
       ? Number(body.shippingPerKmFee)
       : 3500,
+    bankId: body.bankId ? String(body.bankId).trim() : null,
+    bankAccountNo: body.bankAccountNo
+      ? String(body.bankAccountNo).trim()
+      : null,
+    bankAccountName: body.bankAccountName
+      ? String(body.bankAccountName).trim()
+      : null,
   };
 
   try {
