@@ -24,9 +24,13 @@ Create or update `.env` in the project root:
 
 ```env
 DATABASE_URL="mysql://USER:PASSWORD@HOST:3306/DATABASE_NAME"
+
+# Recommended in production: shared rate-limit storage
+UPSTASH_REDIS_REST_URL="https://YOUR-DATABASE.upstash.io"
+UPSTASH_REDIS_REST_TOKEN="YOUR_UPSTASH_REST_TOKEN"
 ```
 
-Replace every value with the real MySQL credentials. The application uses this variable from `prisma/schema.prisma`.
+Replace every value with the real credentials. `DATABASE_URL` is used by Prisma. The two Upstash variables enable distributed API rate limiting across all Next.js instances. If they are omitted, development still works with an in-memory fallback, but that fallback is not sufficient for horizontally scaled production deployments.
 
 ## Installation
 
@@ -114,6 +118,20 @@ Contact request example:
   "message": "I need product advice."
 }
 ```
+
+## API rate limiting and abuse protection
+
+Sensitive write endpoints use endpoint-specific rate limits:
+
+- Login: 10 attempts per 10 minutes per IP and 5 attempts per 15 minutes per hashed email.
+- Registration: 5 attempts per hour per IP.
+- Contact form: 5 submissions per hour per IP.
+- Order creation: 8 attempts per minute per authenticated user and IP.
+- Password changes: 5 attempts per 15 minutes per authenticated user.
+
+Blocked requests return HTTP `429`, a JSON error with `code: "RATE_LIMITED"`, and standard `Retry-After` plus `X-RateLimit-*` headers. Email identifiers are SHA-256 hashed before being used as Redis keys.
+
+Application rate limiting reduces brute force, spam, and expensive API abuse. It does not replace network-level DDoS protection. Production deployments should also enable Cloudflare WAF/Rate Limiting or Vercel Firewall so malicious traffic is rejected before it reaches the Next.js server. When using a custom reverse proxy, configure it to overwrite forwarded-IP headers rather than trusting values supplied directly by clients.
 
 ## Project structure
 
