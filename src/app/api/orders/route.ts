@@ -135,7 +135,7 @@ export async function POST(request: Request) {
                         voucher = await tx.voucher.findUnique({ where: { code: voucherCode } });
                         if (!voucher) throw new OrderCreationError("Mã giảm giá không tồn tại.", 404);
 
-                        const validation = validateVoucherRules(voucher, subtotal);
+                        const validation = validateVoucherRules(voucher, subtotal, shippingFee);
                         if (!validation.valid) {
                             throw new OrderCreationError(validation.message, 400);
                         }

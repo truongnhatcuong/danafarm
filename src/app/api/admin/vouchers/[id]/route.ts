@@ -11,8 +11,8 @@ const voucherSchema = z
         code: z.string().trim().min(2, "Mã voucher cần ít nhất 2 ký tự.").max(50),
         title: z.string().trim().min(2, "Vui lòng nhập tên chương trình.").max(150),
         description: z.string().trim().max(500).optional().nullable(),
-        discountType: z.enum(["FIXED_AMOUNT", "PERCENTAGE"]),
-        discountValue: z.number().int().positive("Giá trị giảm phải lớn hơn 0."),
+        discountType: z.enum(["FIXED_AMOUNT", "PERCENTAGE", "FREE_SHIPPING"]),
+        discountValue: z.number().int().nonnegative("Giá trị giảm không được âm."),
         minOrderValue: z.number().int().nonnegative(),
         maxDiscount: z.number().int().positive().optional().nullable(),
         usageLimit: z.number().int().positive().optional().nullable(),
@@ -23,6 +23,9 @@ const voucherSchema = z
         position: z.number().int().nonnegative(),
     })
     .superRefine((data, context) => {
+        if (data.discountType !== "FREE_SHIPPING" && data.discountValue <= 0) {
+            context.addIssue({ code: "custom", path: ["discountValue"], message: "Giá trị giảm phải lớn hơn 0." });
+        }
         if (data.discountType === "PERCENTAGE" && data.discountValue > 100) {
             context.addIssue({ code: "custom", path: ["discountValue"], message: "Phần trăm giảm không được vượt quá 100%." });
         }

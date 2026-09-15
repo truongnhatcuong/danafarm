@@ -1,37 +1,49 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
-import { BadgePercent, Check, Copy, Gift, Percent, TicketPercent } from "lucide-react";
+import { Check, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { Container } from "@/components/ui/Container";
 import { formatCurrency } from "@/lib/utils";
+import { getVoucherImagePath } from "@/lib/vouchers";
 
 export type HomeVoucher = {
     id: number;
     code: string;
     title: string;
     description: string | null;
-    discountType: "FIXED_AMOUNT" | "PERCENTAGE";
+    discountType: "FIXED_AMOUNT" | "PERCENTAGE" | "FREE_SHIPPING";
     discountValue: number;
     minOrderValue: number;
     maxDiscount: number | null;
     expiresAt: string;
 };
 
-const iconStyles = [
-    "bg-amber-300 text-amber-900",
-    "bg-orange-300 text-orange-900",
-    "bg-emerald-200 text-emerald-900",
-    "bg-rose-200 text-rose-900",
-];
+const iconStyles: Record<HomeVoucher["discountType"], string> = {
+    FIXED_AMOUNT: "bg-amber-300 text-amber-900",
+    PERCENTAGE: "bg-rose-200 text-rose-900",
+    FREE_SHIPPING: "bg-emerald-200 text-emerald-900",
+};
 
-function VoucherIcon({ index }: { index: number }) {
-    const icons = [Gift, TicketPercent, BadgePercent, Percent];
-    const Icon = icons[index % icons.length];
-    return <Icon size={44} strokeWidth={1.8} />;
+function VoucherIcon({ type }: { type: HomeVoucher["discountType"] }) {
+    return (
+        <Image
+            src={getVoucherImagePath(type)}
+            alt=""
+            width={82}
+            height={82}
+            className="size-20 object-contain drop-shadow-sm"
+        />
+    );
 }
 
 function discountLabel(voucher: HomeVoucher) {
+    if (voucher.discountType === "FREE_SHIPPING") {
+        return voucher.discountValue > 0
+            ? `Giảm ${formatCurrency(voucher.discountValue)} phí ship`
+            : "Miễn phí vận chuyển";
+    }
     return voucher.discountType === "PERCENTAGE"
         ? `Giảm ${voucher.discountValue}%`
         : `Giảm ${formatCurrency(voucher.discountValue)}`;
@@ -64,15 +76,15 @@ export function VoucherSection({ vouchers }: { vouchers: HomeVoucher[] }) {
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                    {vouchers.map((voucher, index) => (
+                    {vouchers.map((voucher) => (
                         <article
                             key={voucher.id}
                             className="group relative flex min-h-36 overflow-hidden rounded-2xl border border-shop-border bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
                         >
                             <div
-                                className={`relative grid w-28 shrink-0 place-items-center ${iconStyles[index % iconStyles.length]}`}
+                                className={`relative grid w-28 shrink-0 place-items-center ${iconStyles[voucher.discountType]}`}
                             >
-                                <VoucherIcon index={index} />
+                                <VoucherIcon type={voucher.discountType} />
                                 <span className="absolute -right-3 -top-3 size-6 rounded-full border border-shop-border bg-shop-bg" />
                                 <span className="absolute -bottom-3 -right-3 size-6 rounded-full border border-shop-border bg-shop-bg" />
                             </div>

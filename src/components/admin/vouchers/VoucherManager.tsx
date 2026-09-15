@@ -1,8 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import {
-    BadgePercent,
     CalendarClock,
     Eye,
     EyeOff,
@@ -15,13 +15,14 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/utils";
+import { getVoucherImagePath } from "@/lib/vouchers";
 
 type Voucher = {
     id: number;
     code: string;
     title: string;
     description: string | null;
-    discountType: "FIXED_AMOUNT" | "PERCENTAGE";
+    discountType: "FIXED_AMOUNT" | "PERCENTAGE" | "FREE_SHIPPING";
     discountValue: number;
     minOrderValue: number;
     maxDiscount: number | null;
@@ -39,7 +40,7 @@ type VoucherForm = {
     code: string;
     title: string;
     description: string;
-    discountType: "FIXED_AMOUNT" | "PERCENTAGE";
+    discountType: "FIXED_AMOUNT" | "PERCENTAGE" | "FREE_SHIPPING";
     discountValue: string;
     minOrderValue: string;
     maxDiscount: string;
@@ -93,10 +94,19 @@ function getStatus(voucher: Voucher) {
 }
 
 function benefitLabel(voucher: Voucher) {
+    if (voucher.discountType === "FREE_SHIPPING") {
+        return voucher.discountValue > 0
+            ? `Giảm tối đa ${formatCurrency(voucher.discountValue)} phí vận chuyển`
+            : "Miễn phí vận chuyển";
+    }
     if (voucher.discountType === "PERCENTAGE") {
         return `Giảm ${voucher.discountValue}%${voucher.maxDiscount ? ` · tối đa ${formatCurrency(voucher.maxDiscount)}` : ""}`;
     }
     return `Giảm ${formatCurrency(voucher.discountValue)}`;
+}
+
+function VoucherTypeIcon({ type }: { type: Voucher["discountType"] }) {
+    return <Image src={getVoucherImagePath(type)} alt="" width={36} height={36} className="size-9 object-contain" />;
 }
 
 export function VoucherManager() {
@@ -268,8 +278,8 @@ export function VoucherManager() {
                                         <tr key={voucher.id} className="hover:bg-admin-bg/25">
                                             <td className="px-4 py-3">
                                                 <div className="flex items-center gap-3">
-                                                    <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-admin-accent-soft text-admin-accent">
-                                                        <BadgePercent size={19} />
+                                                    <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-admin-accent-soft p-1">
+                                                        <VoucherTypeIcon type={voucher.discountType} />
                                                     </span>
                                                     <div>
                                                         <p className="font-bold text-admin-ink">{voucher.code}</p>
@@ -365,14 +375,51 @@ export function VoucherManager() {
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                                 <label className="text-sm font-medium text-admin-ink">
                                     Kiểu giảm
-                                    <select className={fieldClass} value={form.discountType} onChange={(event) => setForm({ ...form, discountType: event.target.value as VoucherForm["discountType"] })}>
+                                    <select
+                                        className={fieldClass}
+                                        value={form.discountType}
+                                        onChange={(event) => {
+                                            const discountType = event.target.value as VoucherForm["discountType"];
+                                            setForm({
+                                                ...form,
+                                                discountType,
+                                                discountValue: discountType === "FREE_SHIPPING" ? "0" : form.discountValue === "0" ? "10000" : form.discountValue,
+                                                maxDiscount: discountType === "PERCENTAGE" ? form.maxDiscount : "",
+                                            });
+                                        }}
+                                    >
                                         <option value="FIXED_AMOUNT">Số tiền cố định</option>
                                         <option value="PERCENTAGE">Phần trăm</option>
+                                        <option value="FREE_SHIPPING">Miễn/giảm phí vận chuyển</option>
                                     </select>
                                 </label>
                                 <label className="text-sm font-medium text-admin-ink">
-                                    {form.discountType === "PERCENTAGE" ? "Phần trăm giảm (%)" : "Số tiền giảm (₫)"}
-                                    <input required type="number" min={1} max={form.discountType === "PERCENTAGE" ? 100 : undefined} className={fieldClass} value={form.discountValue} onChange={(event) => setForm({ ...form, discountValue: event.target.value })} />
+                                    {form.discountType === "PERCENTAGE"
+                                        ? "Phần trăm giảm (%)"
+                                        : form.discountType === "FREE_SHIPPING"
+                                            ? "Giảm phí tối đa (₫)"
+                                            : "Số tiền giảm (₫)"}
+                                    <input
+                                        required
+                                        type="number"
+                                        min={
+                                            form.discountType === "FREE_SHIPPING"
+                                                ? 0
+                                                : form.discountType === "PERCENTAGE"
+                                                    ? 1
+                                                    : 1000
+                                        }
+                                        max={form.discountType === "PERCENTAGE" ? 100 : undefined}
+                                        step={form.discountType === "PERCENTAGE" ? 1 : 1000}
+                                        className={fieldClass}
+                                        value={form.discountValue}
+                                        onChange={(event) => setForm({ ...form, discountValue: event.target.value })}
+                                    />
+                                    {form.discountType === "FREE_SHIPPING" && (
+                                        <span className="mt-1 block text-[11px] font-normal text-admin-muted">
+                                            Nhập 0 để miễn toàn bộ phí, hoặc nhập số tiền giảm tối đa.
+                                        </span>
+                                    )}
                                 </label>
                                 <label className="text-sm font-medium text-admin-ink">
                                     Đơn tối thiểu (₫)
@@ -380,7 +427,7 @@ export function VoucherManager() {
                                 </label>
                                 <label className="text-sm font-medium text-admin-ink">
                                     Giảm tối đa (₫)
-                                    <input type="number" min={1} step={1000} disabled={form.discountType !== "PERCENTAGE"} placeholder="Không giới hạn" className={`${fieldClass} disabled:bg-admin-bg disabled:opacity-60`} value={form.maxDiscount} onChange={(event) => setForm({ ...form, maxDiscount: event.target.value })} />
+                                    <input type="number" min={1000} step={1000} disabled={form.discountType !== "PERCENTAGE"} placeholder="Không giới hạn" className={`${fieldClass} disabled:bg-admin-bg disabled:opacity-60`} value={form.maxDiscount} onChange={(event) => setForm({ ...form, maxDiscount: event.target.value })} />
                                 </label>
                             </div>
 

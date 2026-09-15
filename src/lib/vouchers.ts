@@ -23,6 +23,16 @@ export type VoucherValidation =
     | { valid: true; discount: number }
     | { valid: false; discount: 0; message: string };
 
+export const VOUCHER_IMAGE_BY_TYPE: Record<VoucherDiscountType, string> = {
+    FIXED_AMOUNT: "/voucher/fixedAmout.png",
+    PERCENTAGE: "/voucher/precentage.png",
+    FREE_SHIPPING: "/voucher/ship.png",
+};
+
+export function getVoucherImagePath(type: VoucherDiscountType) {
+    return VOUCHER_IMAGE_BY_TYPE[type];
+}
+
 export function normalizeVoucherCode(code: string) {
     return code.trim().toUpperCase().replace(/\s+/g, "");
 }
@@ -32,9 +42,15 @@ export function calculateVoucherDiscount(
     discountValue: number,
     subtotal: number,
     maxDiscount: number | null,
+    shippingFee = 0,
 ) {
-    if (subtotal <= 0 || discountValue <= 0) return 0;
+    if (discountType === "FREE_SHIPPING") {
+        if (shippingFee <= 0) return 0;
+        const shippingDiscountLimit = discountValue > 0 ? discountValue : shippingFee;
+        return Math.max(0, Math.min(shippingFee, shippingDiscountLimit));
+    }
 
+    if (subtotal <= 0 || discountValue <= 0) return 0;
     const rawDiscount =
         discountType === "PERCENTAGE"
             ? Math.floor((subtotal * discountValue) / 100)
@@ -49,6 +65,7 @@ export function calculateVoucherDiscount(
 export function validateVoucherRules(
     voucher: VoucherLike,
     subtotal: number,
+    shippingFee = 0,
     now = new Date(),
 ): VoucherValidation {
     if (!voucher.isActive) {
@@ -70,6 +87,13 @@ export function validateVoucherRules(
             message: `Đơn hàng chưa đạt giá trị tối thiểu ${voucher.minOrderValue.toLocaleString("vi-VN")}₫.`,
         };
     }
+    if (voucher.discountType === "FREE_SHIPPING" && shippingFee <= 0) {
+        return {
+            valid: false,
+            discount: 0,
+            message: "Đơn hàng hiện đã được miễn phí vận chuyển.",
+        };
+    }
 
     return {
         valid: true,
@@ -78,11 +102,17 @@ export function validateVoucherRules(
             voucher.discountValue,
             subtotal,
             voucher.maxDiscount,
+            shippingFee,
         ),
     };
 }
 
 export function getVoucherBenefitLabel(voucher: VoucherLike) {
+    if (voucher.discountType === "FREE_SHIPPING") {
+        return voucher.discountValue > 0
+            ? `Giảm tối đa ${voucher.discountValue.toLocaleString("vi-VN")}₫ phí vận chuyển`
+            : "Miễn phí vận chuyển";
+    }
     if (voucher.discountType === "PERCENTAGE") {
         const maxLabel = voucher.maxDiscount
             ? `, tối đa ${voucher.maxDiscount.toLocaleString("vi-VN")}₫`

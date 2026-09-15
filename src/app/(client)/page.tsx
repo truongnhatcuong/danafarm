@@ -74,7 +74,7 @@ export default async function HomePage() {
 
   const vouchers = voucherRows
     .filter((voucher) => voucher.usageLimit == null || voucher.usedCount < voucher.usageLimit)
-    .slice(0, 4)
+    .slice(0, 8)
     .map((voucher) => ({
       id: voucher.id,
       code: voucher.code,
@@ -90,7 +90,6 @@ export default async function HomePage() {
   return (
     <>
       <HomeBanner banners={banners} />
-      ≈
       <HeroStory />
       <CategoryGrid categories={categories} />
       <VoucherSection vouchers={vouchers} />

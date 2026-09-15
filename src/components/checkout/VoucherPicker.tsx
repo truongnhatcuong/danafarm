@@ -1,16 +1,18 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
-import { BadgePercent, Check, Loader2, TicketPercent, X } from "lucide-react";
+import { Check, Loader2, TicketPercent, X } from "lucide-react";
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/utils";
+import { getVoucherImagePath } from "@/lib/vouchers";
 
 export type CheckoutVoucher = {
     id: number;
     code: string;
     title: string;
     description: string | null;
-    discountType: "FIXED_AMOUNT" | "PERCENTAGE";
+    discountType: "FIXED_AMOUNT" | "PERCENTAGE" | "FREE_SHIPPING";
     discountValue: number;
     minOrderValue: number;
     maxDiscount: number | null;
@@ -20,20 +22,31 @@ export type CheckoutVoucher = {
 export type AppliedVoucher = CheckoutVoucher & { discount: number };
 
 function benefitLabel(voucher: CheckoutVoucher) {
+    if (voucher.discountType === "FREE_SHIPPING") {
+        return voucher.discountValue > 0
+            ? `Giảm tối đa ${formatCurrency(voucher.discountValue)} phí vận chuyển`
+            : "Miễn phí vận chuyển";
+    }
     if (voucher.discountType === "PERCENTAGE") {
         return `Giảm ${voucher.discountValue}%${voucher.maxDiscount ? `, tối đa ${formatCurrency(voucher.maxDiscount)}` : ""}`;
     }
     return `Giảm ${formatCurrency(voucher.discountValue)}`;
 }
 
+function VoucherTypeIcon({ type }: { type: CheckoutVoucher["discountType"] }) {
+    return <Image src={getVoucherImagePath(type)} alt="" width={36} height={36} className="size-9 object-contain" />;
+}
+
 export function VoucherPicker({
     subtotal,
+    shippingFee,
     vouchers,
     appliedVoucher,
     onApplied,
     onRemoved,
 }: {
     subtotal: number;
+    shippingFee: number;
     vouchers: CheckoutVoucher[];
     appliedVoucher: AppliedVoucher | null;
     onApplied: (voucher: AppliedVoucher) => void;
@@ -51,7 +64,11 @@ export function VoucherPicker({
 
         setLoadingCode(normalizedCode);
         try {
-            const query = new URLSearchParams({ code: normalizedCode, subtotal: String(subtotal) });
+            const query = new URLSearchParams({
+                code: normalizedCode,
+                subtotal: String(subtotal),
+                shippingFee: String(shippingFee),
+            });
             const response = await fetch(`/api/vouchers?${query.toString()}`);
             const body = await response.json();
             if (!response.ok) throw new Error(body.error ?? "Không thể áp dụng mã giảm giá.");
@@ -130,21 +147,23 @@ export function VoucherPicker({
                     <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-shop-text/55">Voucher dành cho bạn</p>
                     <div className="grid gap-3 sm:grid-cols-2">
                         {vouchers.map((voucher) => {
-                            const eligible = subtotal >= voucher.minOrderValue;
+                            const eligible =
+                                subtotal >= voucher.minOrderValue &&
+                                (voucher.discountType !== "FREE_SHIPPING" || shippingFee > 0);
                             const isApplied = appliedVoucher?.id === voucher.id;
                             return (
                                 <article
                                     key={voucher.id}
                                     className={`relative overflow-hidden rounded-xl border p-3.5 ${isApplied
-                                            ? "border-shop-main bg-shop-main/5"
-                                            : eligible
-                                                ? "border-shop-border bg-[#fffaf0]"
-                                                : "border-shop-border bg-slate-50 opacity-65"
+                                        ? "border-shop-main bg-shop-main/5"
+                                        : eligible
+                                            ? "border-shop-border bg-[#fffaf0]"
+                                            : "border-shop-border bg-slate-50 opacity-65"
                                         }`}
                                 >
                                     <div className="flex gap-3">
-                                        <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-shop-button text-shop-title">
-                                            <BadgePercent size={20} />
+                                        <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-shop-button/70 p-1">
+                                            <VoucherTypeIcon type={voucher.discountType} />
                                         </span>
                                         <div className="min-w-0 flex-1">
                                             <p className="font-bold text-shop-title">{benefitLabel(voucher)}</p>
@@ -157,7 +176,13 @@ export function VoucherPicker({
                                                     onClick={() => void applyVoucher(voucher.code)}
                                                     className="rounded-full bg-shop-button px-3 py-1 text-xs font-bold text-shop-title transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50"
                                                 >
-                                                    {isApplied ? "Đã dùng" : eligible ? "Dùng mã" : "Chưa đủ điều kiện"}
+                                                    {isApplied
+                                                        ? "Đã dùng"
+                                                        : eligible
+                                                            ? "Dùng mã"
+                                                            : voucher.discountType === "FREE_SHIPPING" && shippingFee === 0
+                                                                ? "Đã miễn phí ship"
+                                                                : "Chưa đủ điều kiện"}
                                                 </button>
                                             </div>
                                         </div>

@@ -180,6 +180,7 @@ enum UserRole {
 enum VoucherDiscountType {
   FIXED_AMOUNT
   PERCENTAGE
+  FREE_SHIPPING
 }
 
 model User {

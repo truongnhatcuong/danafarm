@@ -117,7 +117,14 @@ export function CheckoutClient({
             <div className="space-y-6">
                 <section className="rounded-2xl border border-shop-border bg-white p-5 md:p-6">
                     <h2 className="mb-4 font-bold text-shop-title">1. Địa chỉ giao hàng</h2>
-                    <AddressSelector onSelect={setAddress} />
+                    <AddressSelector
+                        onSelect={(nextAddress) => {
+                            setAddress(nextAddress);
+                            if (appliedVoucher?.discountType === "FREE_SHIPPING") {
+                                setAppliedVoucher(null);
+                            }
+                        }}
+                    />
                 </section>
 
                 <section className="rounded-2xl border border-shop-border bg-white p-5 md:p-6">
@@ -146,8 +153,8 @@ export function CheckoutClient({
 
                         <label
                             className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors ${paymentMethod === "BANK_TRANSFER"
-                                    ? "border-shop-main bg-shop-main/5"
-                                    : "border-shop-border bg-white hover:border-shop-main/40"
+                                ? "border-shop-main bg-shop-main/5"
+                                : "border-shop-border bg-white hover:border-shop-main/40"
                                 }`}
                         >
                             <input
@@ -171,6 +178,7 @@ export function CheckoutClient({
 
                 <VoucherPicker
                     subtotal={subtotal}
+                    shippingFee={quote.shippingFee}
                     vouchers={vouchers}
                     appliedVoucher={appliedVoucher}
                     onApplied={setAppliedVoucher}
@@ -224,7 +232,11 @@ export function CheckoutClient({
                     </div>
                     {appliedVoucher && (
                         <div className="flex items-center justify-between text-emerald-700">
-                            <span>Voucher ({appliedVoucher.code})</span>
+                            <span>
+                                {appliedVoucher.discountType === "FREE_SHIPPING"
+                                    ? `Giảm phí vận chuyển (${appliedVoucher.code})`
+                                    : `Voucher (${appliedVoucher.code})`}
+                            </span>
                             <span className="font-semibold">-{formatCurrency(discount)}</span>
                         </div>
                     )}

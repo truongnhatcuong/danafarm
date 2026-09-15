@@ -170,6 +170,21 @@ const voucherSeeds = [
         showOnHomepage: true,
         position: 3,
     },
+    {
+        code: "DANASHIP",
+        title: "Miễn phí vận chuyển cho đơn từ 300K",
+        description: "Miễn toàn bộ phí vận chuyển cho đơn hàng đủ điều kiện.",
+        discountType: "FREE_SHIPPING" as const,
+        discountValue: 0,
+        minOrderValue: 300000,
+        maxDiscount: null,
+        usageLimit: 300,
+        startsAt: new Date("2026-01-01T00:00:00+07:00"),
+        expiresAt: new Date("2026-12-31T23:59:59+07:00"),
+        isActive: true,
+        showOnHomepage: true,
+        position: 4,
+    },
 ];
 
 async function clearSeededContent() {

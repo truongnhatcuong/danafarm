@@ -8,6 +8,7 @@ export const runtime = "nodejs";
 const voucherQuerySchema = z.object({
     code: z.string().trim().max(50).optional(),
     subtotal: z.coerce.number().int().nonnegative().default(0),
+    shippingFee: z.coerce.number().int().nonnegative().default(0),
 });
 
 const publicVoucherSelect = {
@@ -33,6 +34,7 @@ export async function GET(request: Request) {
     const parsed = voucherQuerySchema.safeParse({
         code: params.get("code") || undefined,
         subtotal: params.get("subtotal") ?? 0,
+        shippingFee: params.get("shippingFee") ?? 0,
     });
     if (!parsed.success) {
         return Response.json({ error: "Dữ liệu kiểm tra voucher không hợp lệ." }, { status: 400 });
@@ -51,7 +53,12 @@ export async function GET(request: Request) {
             return Response.json({ error: "Mã giảm giá không tồn tại." }, { status: 404 });
         }
 
-        const validation = validateVoucherRules(voucher, parsed.data.subtotal, now);
+        const validation = validateVoucherRules(
+            voucher,
+            parsed.data.subtotal,
+            parsed.data.shippingFee,
+            now,
+        );
         if (!validation.valid) {
             return Response.json({ error: validation.message }, { status: 400 });
         }
@@ -94,7 +101,12 @@ export async function GET(request: Request) {
         data: vouchers
             .filter((voucher) => voucher.usageLimit == null || voucher.usedCount < voucher.usageLimit)
             .map((voucher) => {
-                const validation = validateVoucherRules(voucher, parsed.data.subtotal, now);
+                const validation = validateVoucherRules(
+                    voucher,
+                    parsed.data.subtotal,
+                    parsed.data.shippingFee,
+                    now,
+                );
                 return {
                     ...voucher,
                     available: validation.valid && !usedVoucherIds.has(voucher.id),
