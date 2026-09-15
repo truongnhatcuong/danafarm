@@ -5,6 +5,7 @@ import { HomeBanner } from "@/components/home/HomeBanner";
 import { OriginBand } from "@/components/home/OriginBand";
 import { PostSection } from "@/components/home/PostSection";
 import { ProductSection } from "@/components/home/ProductSection";
+import { VoucherSection } from "@/components/home/VoucherSection";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -27,7 +28,8 @@ const productRelations = {
 };
 
 export default async function HomePage() {
-  const [banners, categories, featuredProducts, newProducts, posts] =
+  const now = new Date();
+  const [banners, categories, featuredProducts, newProducts, posts, voucherRows] =
     await Promise.all([
       prisma.banner.findMany({
         where: { isActive: true },
@@ -58,13 +60,40 @@ export default async function HomePage() {
         orderBy: { publishedAt: "desc" },
         take: 4,
       }),
+      prisma.voucher.findMany({
+        where: {
+          isActive: true,
+          showOnHomepage: true,
+          startsAt: { lte: now },
+          expiresAt: { gte: now },
+        },
+        orderBy: [{ position: "asc" }, { createdAt: "desc" }],
+        take: 8,
+      }),
     ]);
+
+  const vouchers = voucherRows
+    .filter((voucher) => voucher.usageLimit == null || voucher.usedCount < voucher.usageLimit)
+    .slice(0, 4)
+    .map((voucher) => ({
+      id: voucher.id,
+      code: voucher.code,
+      title: voucher.title,
+      description: voucher.description,
+      discountType: voucher.discountType,
+      discountValue: voucher.discountValue,
+      minOrderValue: voucher.minOrderValue,
+      maxDiscount: voucher.maxDiscount,
+      expiresAt: voucher.expiresAt.toISOString(),
+    }));
 
   return (
     <>
       <HomeBanner banners={banners} />
+      ≈
       <HeroStory />
       <CategoryGrid categories={categories} />
+      <VoucherSection vouchers={vouchers} />
       <OriginBand />
       <ProductSection
         title="Sản Phẩm Nổi Bật"

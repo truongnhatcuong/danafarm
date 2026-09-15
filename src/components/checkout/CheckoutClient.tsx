@@ -8,13 +8,24 @@ import { toast } from "sonner";
 import { Banknote, Loader2, ShoppingBag, Truck } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { AddressSelector, type CheckoutAddress } from "@/components/checkout/AddressSelector";
+import {
+    VoucherPicker,
+    type AppliedVoucher,
+    type CheckoutVoucher,
+} from "@/components/checkout/VoucherPicker";
 import { calculateShippingFee, type ShippingConfig } from "@/lib/shipping";
 import { formatCurrency } from "@/lib/utils";
 import { useCartStore } from "@/stores/cart-store";
 
 type PaymentMethod = "COD" | "BANK_TRANSFER";
 
-export function CheckoutClient({ shippingConfig }: { shippingConfig: ShippingConfig }) {
+export function CheckoutClient({
+    shippingConfig,
+    vouchers,
+}: {
+    shippingConfig: ShippingConfig;
+    vouchers: CheckoutVoucher[];
+}) {
     const router = useRouter();
     const hydrated = useCartStore((state) => state.hydrated);
     const activeUserId = useCartStore((state) => state.activeUserId);
@@ -25,6 +36,7 @@ export function CheckoutClient({ shippingConfig }: { shippingConfig: ShippingCon
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("COD");
     const [note, setNote] = useState("");
     const [submitting, setSubmitting] = useState(false);
+    const [appliedVoucher, setAppliedVoucher] = useState<AppliedVoucher | null>(null);
 
     useEffect(() => {
         if (hydrated && activeUserId !== null && items.length === 0) {
@@ -42,7 +54,8 @@ export function CheckoutClient({ shippingConfig }: { shippingConfig: ShippingCon
         return calculateShippingFee(address.provinceCode, subtotal, shippingConfig);
     }, [address, subtotal, shippingConfig]);
 
-    const total = subtotal + quote.shippingFee;
+    const discount = appliedVoucher?.discount ?? 0;
+    const total = Math.max(0, subtotal + quote.shippingFee - discount);
 
     async function handleSubmit() {
         if (!address) {
@@ -60,6 +73,7 @@ export function CheckoutClient({ shippingConfig }: { shippingConfig: ShippingCon
                     addressId: address.id,
                     paymentMethod,
                     note: note.trim() || undefined,
+                    voucherCode: appliedVoucher?.code,
                     items: items.map((item) => ({
                         productId: item.productId,
                         variantId: item.variantId,
@@ -110,9 +124,8 @@ export function CheckoutClient({ shippingConfig }: { shippingConfig: ShippingCon
                     <h2 className="mb-4 font-bold text-shop-title">2. Phương thức thanh toán</h2>
                     <div className="space-y-3">
                         <label
-                            className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors ${
-                                paymentMethod === "COD" ? "border-shop-main bg-shop-main/5" : "border-shop-border bg-white hover:border-shop-main/40"
-                            }`}
+                            className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors ${paymentMethod === "COD" ? "border-shop-main bg-shop-main/5" : "border-shop-border bg-white hover:border-shop-main/40"
+                                }`}
                         >
                             <input
                                 type="radio"
@@ -132,11 +145,10 @@ export function CheckoutClient({ shippingConfig }: { shippingConfig: ShippingCon
                         </label>
 
                         <label
-                            className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors ${
-                                paymentMethod === "BANK_TRANSFER"
+                            className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors ${paymentMethod === "BANK_TRANSFER"
                                     ? "border-shop-main bg-shop-main/5"
                                     : "border-shop-border bg-white hover:border-shop-main/40"
-                            }`}
+                                }`}
                         >
                             <input
                                 type="radio"
@@ -157,8 +169,16 @@ export function CheckoutClient({ shippingConfig }: { shippingConfig: ShippingCon
                     </div>
                 </section>
 
+                <VoucherPicker
+                    subtotal={subtotal}
+                    vouchers={vouchers}
+                    appliedVoucher={appliedVoucher}
+                    onApplied={setAppliedVoucher}
+                    onRemoved={() => setAppliedVoucher(null)}
+                />
+
                 <section className="rounded-2xl border border-shop-border bg-white p-5 md:p-6">
-                    <h2 className="mb-4 font-bold text-shop-title">3. Ghi chú (không bắt buộc)</h2>
+                    <h2 className="mb-4 font-bold text-shop-title">4. Ghi chú (không bắt buộc)</h2>
                     <textarea
                         rows={3}
                         value={note}
@@ -202,6 +222,12 @@ export function CheckoutClient({ shippingConfig }: { shippingConfig: ShippingCon
                             {quote.isFreeShip ? "Miễn phí" : formatCurrency(quote.shippingFee)}
                         </span>
                     </div>
+                    {appliedVoucher && (
+                        <div className="flex items-center justify-between text-emerald-700">
+                            <span>Voucher ({appliedVoucher.code})</span>
+                            <span className="font-semibold">-{formatCurrency(discount)}</span>
+                        </div>
+                    )}
                 </div>
 
                 <div className="flex items-center justify-between border-t border-shop-border pt-4">

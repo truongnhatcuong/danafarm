@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, Receipt, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Eye, Receipt, Search } from "lucide-react";
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/utils";
 
@@ -61,12 +61,14 @@ export function OrderManager() {
             if (status) query.set("status", status);
             const res = await fetch(`/api/admin/orders?${query.toString()}`).then((r) => r.json());
             setItems(res.data ?? []);
-            setMeta(res.pagination ?? meta);
+            setMeta((current) => res.pagination ?? current);
         },
         [search, status],
     );
 
     useEffect(() => {
+        // Initial/filter-driven fetch intentionally synchronizes remote order data with the view.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         void load();
     }, [load]);
 
@@ -131,12 +133,13 @@ export function OrderManager() {
                                 <th className="px-4 py-3">Tổng tiền</th>
                                 <th className="px-4 py-3">Trạng thái</th>
                                 <th className="px-4 py-3">Ngày đặt</th>
+                                <th className="px-4 py-3 text-right">Chi tiết</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-admin-border">
                             {items.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} className="p-12 text-center text-admin-muted">
+                                    <td colSpan={7} className="p-12 text-center text-admin-muted">
                                         <Receipt size={32} className="mx-auto mb-2 text-admin-muted/60" />
                                         Không có đơn hàng nào.
                                     </td>
@@ -174,6 +177,15 @@ export function OrderManager() {
                                         </td>
                                         <td className="px-4 py-3 text-admin-muted">
                                             {new Date(order.createdAt).toLocaleString("vi-VN")}
+                                        </td>
+                                        <td className="px-4 py-3 text-right">
+                                            <Link
+                                                href={`/admin/orders/${order.id}`}
+                                                aria-label={`Xem chi tiết đơn hàng ${order.code}`}
+                                                className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-admin-border bg-admin-surface px-3 py-2 text-xs font-semibold text-admin-ink transition hover:border-admin-accent hover:bg-admin-accent hover:text-white"
+                                            >
+                                                <Eye size={14} /> Xem chi tiết
+                                            </Link>
                                         </td>
                                     </tr>
                                 ))

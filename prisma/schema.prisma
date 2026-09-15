@@ -177,18 +177,24 @@ enum UserRole {
   ADMIN
 }
 
+enum VoucherDiscountType {
+  FIXED_AMOUNT
+  PERCENTAGE
+}
+
 model User {
-  id           Int       @id @default(autoincrement())
-  name         String
-  email        String    @unique
-  passwordHash String
-  phone        String?
-  role         UserRole  @default(CUSTOMER)
-  sessions     Session[]
-  addresses    Address[]
-  orders       Order[]
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id            Int            @id @default(autoincrement())
+  name          String
+  email         String         @unique
+  passwordHash  String
+  phone         String?
+  role          UserRole       @default(CUSTOMER)
+  sessions      Session[]
+  addresses     Address[]
+  orders        Order[]
+  voucherUsages VoucherUsage[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
   @@index([role])
 }
@@ -214,8 +220,33 @@ model Address {
 }
 
 // ---------------------------------------------------------------------------
-// Orders
+// Vouchers & orders
 // ---------------------------------------------------------------------------
+
+model Voucher {
+  id             Int                 @id @default(autoincrement())
+  code           String              @unique
+  title          String
+  description    String?             @db.Text
+  discountType   VoucherDiscountType @default(FIXED_AMOUNT)
+  discountValue  Int
+  minOrderValue  Int                 @default(0)
+  maxDiscount    Int?
+  usageLimit     Int?
+  usedCount      Int                 @default(0)
+  startsAt       DateTime
+  expiresAt      DateTime
+  isActive       Boolean             @default(true)
+  showOnHomepage Boolean             @default(true)
+  position       Int                 @default(0)
+  orders         Order[]             @relation("VoucherOrders")
+  usages         VoucherUsage[]
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@index([isActive, startsAt, expiresAt])
+  @@index([showOnHomepage, position])
+}
 
 enum OrderStatus {
   PENDING
@@ -249,14 +280,34 @@ model Order {
   note          String?       @db.Text
   subtotal      Int
   shippingFee   Int
+  voucherId     Int?
+  voucher       Voucher?      @relation("VoucherOrders", fields: [voucherId], references: [id], onDelete: SetNull)
+  voucherCode   String?
   discount      Int           @default(0)
   total         Int
   items         OrderItem[]
+  voucherUsage  VoucherUsage? @relation("OrderVoucherUsage")
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
   @@index([userId])
   @@index([status])
+  @@index([voucherId])
+}
+
+model VoucherUsage {
+  id        Int      @id @default(autoincrement())
+  voucherId Int
+  voucher   Voucher  @relation(fields: [voucherId], references: [id], onDelete: Restrict)
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  orderId   Int      @unique
+  order     Order    @relation("OrderVoucherUsage", fields: [orderId], references: [id], onDelete: Cascade)
+  discount  Int
+  createdAt DateTime @default(now())
+
+  @@unique([voucherId, userId])
+  @@index([userId])
 }
 
 model OrderItem {

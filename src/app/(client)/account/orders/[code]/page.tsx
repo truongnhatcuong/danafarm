@@ -132,8 +132,8 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ co
                             <span>{order.shippingFee === 0 ? "Miễn phí" : formatCurrency(order.shippingFee)}</span>
                         </div>
                         {order.discount > 0 && (
-                            <div className="flex justify-between text-shop-text/70">
-                                <span>Giảm giá</span>
+                            <div className="flex justify-between text-emerald-700">
+                                <span>{order.voucherCode ? `Voucher (${order.voucherCode})` : "Giảm giá"}</span>
                                 <span>-{formatCurrency(order.discount)}</span>
                             </div>
                         )}

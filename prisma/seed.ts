@@ -109,6 +109,69 @@ const bannerSeeds = [
     },
 ];
 
+const voucherSeeds = [
+    {
+        code: "DANA5K",
+        title: "Giảm 5K cho đơn từ 150K",
+        description: "Ưu đãi áp dụng cho toàn bộ sản phẩm trong đơn hàng.",
+        discountType: "FIXED_AMOUNT" as const,
+        discountValue: 5000,
+        minOrderValue: 150000,
+        maxDiscount: null,
+        usageLimit: 500,
+        startsAt: new Date("2026-01-01T00:00:00+07:00"),
+        expiresAt: new Date("2026-12-31T23:59:59+07:00"),
+        isActive: true,
+        showOnHomepage: true,
+        position: 0,
+    },
+    {
+        code: "DANA10K",
+        title: "Giảm 10K cho đơn từ 250K",
+        description: "Ưu đãi áp dụng cho toàn bộ sản phẩm trong đơn hàng.",
+        discountType: "FIXED_AMOUNT" as const,
+        discountValue: 10000,
+        minOrderValue: 250000,
+        maxDiscount: null,
+        usageLimit: 500,
+        startsAt: new Date("2026-01-01T00:00:00+07:00"),
+        expiresAt: new Date("2026-12-31T23:59:59+07:00"),
+        isActive: true,
+        showOnHomepage: true,
+        position: 1,
+    },
+    {
+        code: "DANA15K",
+        title: "Giảm 15K cho đơn từ 350K",
+        description: "Ưu đãi áp dụng cho toàn bộ sản phẩm trong đơn hàng.",
+        discountType: "FIXED_AMOUNT" as const,
+        discountValue: 15000,
+        minOrderValue: 350000,
+        maxDiscount: null,
+        usageLimit: 300,
+        startsAt: new Date("2026-01-01T00:00:00+07:00"),
+        expiresAt: new Date("2026-12-31T23:59:59+07:00"),
+        isActive: true,
+        showOnHomepage: true,
+        position: 2,
+    },
+    {
+        code: "DANA50K",
+        title: "Giảm 10% tối đa 50K",
+        description: "Giảm 10% cho đơn từ 500K, tối đa 50K trên toàn bộ sản phẩm.",
+        discountType: "PERCENTAGE" as const,
+        discountValue: 10,
+        minOrderValue: 500000,
+        maxDiscount: 50000,
+        usageLimit: 200,
+        startsAt: new Date("2026-01-01T00:00:00+07:00"),
+        expiresAt: new Date("2026-12-31T23:59:59+07:00"),
+        isActive: true,
+        showOnHomepage: true,
+        position: 3,
+    },
+];
+
 async function clearSeededContent() {
     await prisma.productVariant.deleteMany();
     await prisma.productImage.deleteMany();
@@ -272,6 +335,15 @@ async function main() {
     const pageCount = await seedPages();
 
     await prisma.banner.createMany({ data: bannerSeeds });
+    await Promise.all(
+        voucherSeeds.map((voucher) =>
+            prisma.voucher.upsert({
+                where: { code: voucher.code },
+                update: voucher,
+                create: voucher,
+            }),
+        ),
+    );
     await prisma.siteSetting.create({
         data: {
             companyName: "CÔNG TY TNHH DANAFARM",
@@ -292,7 +364,7 @@ async function main() {
     });
 
     console.log(
-        `Seed complete: ${categoryIds.size} categories, ${productCount} products, ${postCount} posts, ${pageCount} pages, ${bannerSeeds.length} banners.`,
+        `Seed complete: ${categoryIds.size} categories, ${productCount} products, ${postCount} posts, ${pageCount} pages, ${bannerSeeds.length} banners, ${voucherSeeds.length} vouchers.`,
     );
 }
 

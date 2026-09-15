@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { calculateShippingFee } from "@/lib/shipping";
 import { generateOrderCode } from "@/lib/utils";
+import { normalizeVoucherCode, validateVoucherRules } from "@/lib/vouchers";
 
 export const runtime = "nodejs";
 
@@ -11,6 +12,7 @@ const createOrderSchema = z.object({
     addressId: z.number().int().positive("Vui lòng chọn địa chỉ giao hàng."),
     paymentMethod: z.enum(["COD", "BANK_TRANSFER"]),
     note: z.string().trim().max(500).optional(),
+    voucherCode: z.string().trim().max(50).optional(),
     items: z
         .array(
             z.object({
@@ -65,6 +67,9 @@ export async function POST(request: Request) {
         return Response.json({ error: parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ." }, { status: 400 });
     }
     const { addressId, paymentMethod, note, items } = parsed.data;
+    const voucherCode = parsed.data.voucherCode
+        ? normalizeVoucherCode(parsed.data.voucherCode)
+        : null;
 
     try {
         const address = await prisma.address.findFirst({ where: { id: addressId, userId: user.id } });
@@ -117,13 +122,50 @@ export async function POST(request: Request) {
 
         const quote = calculateShippingFee(address.provinceCode, subtotal, settings);
         const shippingFee = quote.shippingFee;
-        const total = subtotal + shippingFee;
 
         let lastError: unknown = null;
         for (let attempt = 0; attempt < 5; attempt++) {
             const code = generateOrderCode();
             try {
                 const order = await prisma.$transaction(async (tx) => {
+                    let voucher: Awaited<ReturnType<typeof tx.voucher.findUnique>> = null;
+                    let discount = 0;
+
+                    if (voucherCode) {
+                        voucher = await tx.voucher.findUnique({ where: { code: voucherCode } });
+                        if (!voucher) throw new OrderCreationError("Mã giảm giá không tồn tại.", 404);
+
+                        const validation = validateVoucherRules(voucher, subtotal);
+                        if (!validation.valid) {
+                            throw new OrderCreationError(validation.message, 400);
+                        }
+
+                        const previousUsage = await tx.voucherUsage.findUnique({
+                            where: { voucherId_userId: { voucherId: voucher.id, userId: user.id } },
+                            select: { id: true },
+                        });
+                        if (previousUsage) {
+                            throw new OrderCreationError("Bạn đã sử dụng mã giảm giá này.", 409);
+                        }
+
+                        const claim = await tx.voucher.updateMany({
+                            where: {
+                                id: voucher.id,
+                                isActive: true,
+                                startsAt: { lte: new Date() },
+                                expiresAt: { gte: new Date() },
+                                ...(voucher.usageLimit == null
+                                    ? {}
+                                    : { usedCount: { lt: voucher.usageLimit } }),
+                            },
+                            data: { usedCount: { increment: 1 } },
+                        });
+                        if (claim.count === 0) {
+                            throw new OrderCreationError("Mã giảm giá vừa hết lượt hoặc không còn hiệu lực.", 409);
+                        }
+                        discount = validation.discount;
+                    }
+
                     for (const item of orderItemsData) {
                         const result = await tx.product.updateMany({
                             where: { id: item.productId, quantity: { gte: item.quantity } },
@@ -134,7 +176,7 @@ export async function POST(request: Request) {
                         }
                     }
 
-                    return tx.order.create({
+                    const createdOrder = await tx.order.create({
                         data: {
                             code,
                             userId: user.id,
@@ -150,12 +192,27 @@ export async function POST(request: Request) {
                             note: note || null,
                             subtotal,
                             shippingFee,
-                            discount: 0,
-                            total,
+                            voucherId: voucher?.id ?? null,
+                            voucherCode: voucher?.code ?? null,
+                            discount,
+                            total: Math.max(0, subtotal + shippingFee - discount),
                             items: { create: orderItemsData },
                         },
                         include: { items: true },
                     });
+
+                    if (voucher) {
+                        await tx.voucherUsage.create({
+                            data: {
+                                voucherId: voucher.id,
+                                userId: user.id,
+                                orderId: createdOrder.id,
+                                discount,
+                            },
+                        });
+                    }
+
+                    return createdOrder;
                 });
 
                 return Response.json({ data: order }, { status: 201 });

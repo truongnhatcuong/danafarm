@@ -13,6 +13,7 @@ import {
     Receipt,
     Settings,
     Store,
+    TicketPercent,
     Users,
     X,
 } from "lucide-react";
@@ -27,6 +28,7 @@ const groups: NavGroup[] = [
         title: "Cửa hàng",
         links: [
             { label: "Đơn hàng", href: "/admin/orders", icon: Receipt },
+            { label: "Voucher", href: "/admin/vouchers", icon: TicketPercent },
             { label: "Sản phẩm", href: "/admin/products", icon: Package },
             { label: "Danh mục", href: "/admin/categories", icon: LayoutGrid },
         ],
@@ -75,9 +77,8 @@ export function AdminSidebar({
                 />
             )}
             <aside
-                className={`fixed inset-y-0 left-0 z-50 flex w-72 shrink-0 flex-col bg-admin-sidebar-bg text-admin-sidebar-ink transition-transform duration-200 ease-out lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${
-                    open ? "translate-x-0" : "-translate-x-full"
-                }`}
+                className={`fixed inset-y-0 left-0 z-50 flex w-72 shrink-0 flex-col bg-admin-sidebar-bg text-admin-sidebar-ink transition-transform duration-200 ease-out lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${open ? "translate-x-0" : "-translate-x-full"
+                    }`}
             >
                 <div className="flex items-center justify-between gap-3 border-b border-admin-sidebar-border px-5 py-5">
                     <Link href="/admin" onClick={onClose} className="flex items-center gap-3">
@@ -112,16 +113,14 @@ export function AdminSidebar({
                                             key={link.href}
                                             href={link.href}
                                             onClick={onClose}
-                                            className={`group relative flex items-center gap-3 rounded-lg py-2.5 pr-3 pl-3 text-[13.5px] transition ${
-                                                active
+                                            className={`group relative flex items-center gap-3 rounded-lg py-2.5 pr-3 pl-3 text-[13.5px] transition ${active
                                                     ? "bg-white/[0.07] font-semibold text-white"
                                                     : "text-admin-sidebar-muted hover:bg-white/5 hover:text-white"
-                                            }`}
+                                                }`}
                                         >
                                             <span
-                                                className={`absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-full bg-admin-accent transition-opacity ${
-                                                    active ? "opacity-100" : "opacity-0"
-                                                }`}
+                                                className={`absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-full bg-admin-accent transition-opacity ${active ? "opacity-100" : "opacity-0"
+                                                    }`}
                                             />
                                             <link.icon
                                                 size={17}
