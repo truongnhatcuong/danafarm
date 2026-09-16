@@ -331,7 +331,7 @@ export default async function AdminDashboardPage({ searchParams }: DashboardPage
                 </div>
             </section>
 
-            <section className="grid gap-5 xl:grid-cols-2">
+            <section className="grid gap-5 grid-cols-1 xl:grid-cols-2">
                 <div className="rounded-2xl border border-admin-border bg-admin-surface">
                     <div className="flex items-center justify-between border-b border-admin-border px-5 py-4">
                         <h2 className="text-sm font-semibold text-admin-ink">Đơn hàng gần đây</h2>

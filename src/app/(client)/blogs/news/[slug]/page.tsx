@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import { cache } from "react";
 import { notFound } from "next/navigation";
 import { CalendarDays, UserRound } from "lucide-react";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -9,15 +10,19 @@ import { SITE_INFO } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
 import { absoluteUrl } from "@/lib/seo";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 type ArticlePageProps = { params: Promise<{ slug: string }> };
+
+const getPost = cache((slug: string) =>
+  prisma.post.findUnique({ where: { slug } }),
+);
 
 export async function generateMetadata({
   params,
 }: ArticlePageProps): Promise<Metadata> {
   const { slug } = await params;
-  const post = await prisma.post.findUnique({ where: { slug } });
+  const post = await getPost(slug);
   if (!post) return { title: "Không tìm thấy bài viết | DanaFarm" };
 
   const path = `/blogs/news/${slug}`;
@@ -46,7 +51,7 @@ export async function generateMetadata({
 
 export default async function ArticlePage({ params }: ArticlePageProps) {
   const { slug } = await params;
-  const post = await prisma.post.findUnique({ where: { slug } });
+  const post = await getPost(slug);
   if (!post) notFound();
 
   const publishedDate = new Intl.DateTimeFormat("vi-VN", {

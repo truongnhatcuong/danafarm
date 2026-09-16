@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { CheckCircle2, MapPin, Truck } from "lucide-react";
 import { AccountShell } from "@/components/account/AccountShell";
+import { CustomerCancelOrder } from "@/components/order/CustomerCancelOrder";
 import { OrderStatusTimeline } from "@/components/order/OrderStatusTimeline";
 import { VietQRPaymentCard } from "@/components/order/VietQRPaymentCard";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
@@ -86,7 +88,7 @@ export default async function OrderDetailPage({
         />
       }
     >
-      <section className="space-y-6 rounded-2xl border border-shop-border bg-white p-6 shadow-sm md:p-10">
+      <section className="space-y-6 rounded-2xl border border-shop-border bg-white p-4 shadow-sm sm:p-6 md:p-10">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <CheckCircle2 className="text-emerald-600" size={28} />
@@ -106,9 +108,41 @@ export default async function OrderDetailPage({
           </span>
         </div>
 
-        <div className="rounded-xl border border-shop-border p-5">
+        <div className="overflow-hidden rounded-xl border border-shop-border p-3.5 sm:p-5">
           <OrderStatusTimeline status={order.status} />
         </div>
+
+        {order.status === "PENDING" && order.paymentStatus !== "PAID" && (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
+            <div>
+              <p className="text-sm font-semibold text-amber-900">
+                Bạn có thể hủy đơn khi cửa hàng chưa xác nhận.
+              </p>
+              <p className="mt-1 text-xs leading-5 text-amber-800/80">
+                Tồn kho và voucher sẽ được hoàn lại tự động, an toàn.
+              </p>
+            </div>
+            <CustomerCancelOrder orderCode={order.code} />
+          </div>
+        )}
+
+        {order.status === "PENDING" &&
+          order.paymentMethod === "BANK_TRANSFER" &&
+          order.paymentStatus === "PAID" && (
+            <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
+              <p className="font-semibold">Yêu cầu hủy / hoàn tiền</p>
+              <p className="mt-1 leading-6 text-blue-800/85">
+                Đơn đã thanh toán không thể hủy trực tiếp. Vui lòng liên hệ cửa
+                hàng để được kiểm tra và hướng dẫn hoàn tiền.
+              </p>
+              <Link
+                href="/pages/lien-he"
+                className="mt-2 inline-flex font-semibold text-shop-main hover:underline"
+              >
+                Liên hệ cửa hàng
+              </Link>
+            </div>
+          )}
 
         {order.paymentMethod === "BANK_TRANSFER" &&
           order.paymentStatus === "PAID" && (

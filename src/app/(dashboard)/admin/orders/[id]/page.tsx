@@ -24,9 +24,31 @@ export default async function AdminOrderDetailPage({
     include: {
       items: true,
       user: { select: { name: true, email: true, phone: true } },
+      statusHistory: {
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        include: { changedBy: { select: { name: true, email: true } } },
+      },
     },
   });
   if (!order) notFound();
+
+  const latestOrderChange = order.statusHistory.find(
+    (entry) => entry.changeType === "ORDER_STATUS",
+  );
+  const latestPaymentChange = order.statusHistory.find(
+    (entry) => entry.changeType === "PAYMENT_STATUS",
+  );
+
+  const statusLabels: Record<string, string> = {
+    PENDING: "Chờ xác nhận",
+    CONFIRMED: "Đã xác nhận",
+    PACKING: "Đang đóng gói",
+    SHIPPING: "Đang giao hàng",
+    DELIVERED: "Đã giao hàng",
+    CANCELLED: "Đã hủy",
+    PAID: "Đã thanh toán",
+    FAILED: "Thanh toán thất bại",
+  };
 
   return (
     <div className="space-y-6">
@@ -49,10 +71,12 @@ export default async function AdminOrderDetailPage({
           orderId={order.id}
           status={order.status}
           paymentStatus={order.paymentStatus}
+          previousStatus={latestOrderChange?.previousStatus}
+          previousPaymentStatus={latestPaymentChange?.previousPayment}
         />
       </div>
 
-      <div className="rounded-2xl border border-admin-border bg-admin-surface p-5 shadow-xs">
+      <div className="overflow-hidden rounded-2xl border border-admin-border bg-admin-surface p-3.5 sm:p-5 shadow-xs">
         <OrderStatusTimeline status={order.status} />
       </div>
 
@@ -92,14 +116,13 @@ export default async function AdminOrderDetailPage({
             <p className="flex items-center gap-2">
               Trạng thái thanh toán:
               <span
-                className={`rounded px-2 py-0.5 text-xs font-bold ${
-                  order.paymentStatus === "PAID"
-                    ? "bg-emerald-50 text-emerald-700"
-                    : order.paymentStatus === "CANCELLED" ||
-                        order.paymentStatus === "FAILED"
-                      ? "bg-rose-50 text-rose-700"
-                      : "bg-amber-50 text-amber-700"
-                }`}
+                className={`rounded px-2 py-0.5 text-xs font-bold ${order.paymentStatus === "PAID"
+                  ? "bg-emerald-50 text-emerald-700"
+                  : order.paymentStatus === "CANCELLED" ||
+                    order.paymentStatus === "FAILED"
+                    ? "bg-rose-50 text-rose-700"
+                    : "bg-amber-50 text-amber-700"
+                  }`}
               >
                 {order.paymentStatus === "PAID"
                   ? "Đã thanh toán"
@@ -186,6 +209,47 @@ export default async function AdminOrderDetailPage({
           </div>
         </div>
       </div>
+
+      <section className="overflow-hidden rounded-2xl border border-admin-border bg-admin-surface shadow-xs">
+        <header className="border-b border-admin-border px-5 py-4">
+          <h2 className="font-semibold text-admin-ink">Lịch sử trạng thái</h2>
+          <p className="text-xs text-admin-muted">
+            Ghi nhận người thực hiện, thời gian và nội dung thay đổi.
+          </p>
+        </header>
+        {order.statusHistory.length === 0 ? (
+          <p className="p-5 text-sm text-admin-muted">
+            Chưa có thay đổi trạng thái nào được ghi nhận.
+          </p>
+        ) : (
+          <ol className="divide-y divide-admin-border">
+            {order.statusHistory.map((entry) => {
+              const isOrder = entry.changeType === "ORDER_STATUS";
+              const previous = isOrder
+                ? entry.previousStatus
+                : entry.previousPayment;
+              const next = isOrder ? entry.nextStatus : entry.nextPayment;
+              return (
+                <li key={entry.id} className="flex flex-wrap justify-between gap-3 px-5 py-4 text-sm">
+                  <div>
+                    <p className="font-medium text-admin-ink">
+                      {entry.isUndo ? "Hoàn tác" : "Cập nhật"}{" "}
+                      {isOrder ? "đơn hàng" : "thanh toán"}: {previous ? statusLabels[previous] ?? previous : "—"}{" "}
+                      → {next ? statusLabels[next] ?? next : "—"}
+                    </p>
+                    <p className="text-xs text-admin-muted">
+                      {entry.actorType === "CUSTOMER" ? "Khách hàng" : "Quản trị viên"}: {entry.changedBy.name} · {entry.changedBy.email}
+                    </p>
+                  </div>
+                  <time className="text-xs text-admin-muted">
+                    {new Date(entry.createdAt).toLocaleString("vi-VN")}
+                  </time>
+                </li>
+              );
+            })}
+          </ol>
+        )}
+      </section>
     </div>
   );
 }

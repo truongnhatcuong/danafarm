@@ -1,6 +1,7 @@
 "use client";
 
-import { FolderPlus, Pencil, Loader2, RotateCcw, Sparkles } from "lucide-react";
+import Image from "next/image";
+import { FolderPlus, Pencil, Loader2, RotateCcw } from "lucide-react";
 import { UploadButton } from "@/lib/uploadthing-client";
 import { slugify } from "@/lib/utils";
 import type { Category, CategoryFormValues } from "./types";
@@ -42,11 +43,10 @@ export function CategoryFormCard({
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-admin-border pb-4">
         <div className="flex items-center gap-3">
           <span
-            className={`grid size-10 place-items-center rounded-xl ${
-              editing
-                ? "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400"
-                : "bg-admin-accent-soft text-admin-accent"
-            }`}
+            className={`grid size-10 place-items-center rounded-xl ${editing
+              ? "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400"
+              : "bg-admin-accent-soft text-admin-accent"
+              }`}
           >
             {editing ? <Pencil size={18} /> : <FolderPlus size={18} />}
           </span>
@@ -130,7 +130,7 @@ export function CategoryFormCard({
           </label>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-1 justify-center">
+        <div className="grid gap-4 md:grid-cols-1 md:justify-center">
           <label className="block text-sm font-medium text-admin-ink md:col-span-1">
             Mô tả danh mục
             <textarea
@@ -149,9 +149,11 @@ export function CategoryFormCard({
             <div className="mt-2 flex items-center gap-3">
               {value.imageUrl ? (
                 <div className="flex items-center gap-3">
-                  <img
+                  <Image
                     src={value.imageUrl}
                     alt=""
+                    width={64}
+                    height={64}
                     className="size-16 rounded-lg border border-admin-border object-cover shadow-xs"
                   />
                   <button

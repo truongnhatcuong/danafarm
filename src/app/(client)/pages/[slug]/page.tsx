@@ -1,13 +1,18 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { cache } from "react";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { Container } from "@/components/ui/Container";
 import { prisma } from "@/lib/prisma";
 import { absoluteUrl } from "@/lib/seo";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 type ContentPageProps = { params: Promise<{ slug: string }> };
+
+const getContentPage = cache((slug: string) =>
+  prisma.page.findUnique({ where: { slug } }),
+);
 
 function toPlainText(html: string, maxLength = 160): string {
   const text = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
@@ -18,10 +23,7 @@ export async function generateMetadata({
   params,
 }: ContentPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const page = await prisma.page.findUnique({
-    where: { slug },
-    select: { title: true, content: true },
-  });
+  const page = await getContentPage(slug);
   if (!page) return { title: "Không tìm thấy trang | DanaFarm" };
 
   const description = toPlainText(page.content);
@@ -36,7 +38,7 @@ export async function generateMetadata({
 
 export default async function ContentPage({ params }: ContentPageProps) {
   const { slug } = await params;
-  const page = await prisma.page.findUnique({ where: { slug } });
+  const page = await getContentPage(slug);
 
   if (!page) notFound();
 

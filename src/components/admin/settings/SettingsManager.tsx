@@ -620,12 +620,14 @@ export function SettingsManager() {
               {form.bankId && form.bankAccountNo ? (
                 <div className="space-y-2">
                   <div className="relative mx-auto size-48 overflow-hidden rounded-lg border border-admin-border bg-white shadow-xs">
-                    <img
+                    <Image
                       src={`https://img.vietqr.io/image/${form.bankId}-${form.bankAccountNo}-compact2.png?amount=50000&addInfo=DANAFARM&accountName=${encodeURIComponent(
                         form.bankAccountName || "",
                       )}`}
                       alt="VietQR Preview"
-                      className="size-full object-contain p-1"
+                      fill
+                      sizes="192px"
+                      className="object-contain p-1"
                     />
                   </div>
                   <p className="text-[11px] text-admin-muted">

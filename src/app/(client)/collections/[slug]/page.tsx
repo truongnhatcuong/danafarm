@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { Prisma } from "@prisma/client";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { cache } from "react";
 import { ArrowLeft } from "lucide-react";
 import { CollectionSortSelect } from "@/components/product/CollectionSortSelect";
 import { ProductGrid } from "@/components/product/ProductGrid";
@@ -12,7 +13,7 @@ import { Pagination } from "@/components/ui/Pagination";
 import { prisma } from "@/lib/prisma";
 import { absoluteUrl } from "@/lib/seo";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 const PRODUCTS_PER_PAGE = 20;
 const VALID_SORTS = new Set(["newest", "price-asc", "price-desc", "name"]);
@@ -24,6 +25,13 @@ type CollectionPageProps = {
     page?: string | string[];
   }>;
 };
+
+const getCategory = cache((slug: string) =>
+  prisma.category.findUnique({
+    where: { slug },
+    include: { children: { orderBy: { position: "asc" } } },
+  }),
+);
 
 export async function generateMetadata({
   params,
@@ -41,10 +49,7 @@ export async function generateMetadata({
     };
   }
 
-  const category = await prisma.category.findUnique({
-    where: { slug },
-    select: { name: true, description: true },
-  });
+  const category = await getCategory(slug);
   if (!category) return { title: "Không tìm thấy danh mục | DanaFarm" };
 
   const description =
@@ -66,13 +71,7 @@ export default async function CollectionPage({
   const sort = sortValue && VALID_SORTS.has(sortValue) ? sortValue : "newest";
   const pageValue = Array.isArray(query.page) ? query.page[0] : query.page;
   const requestedPage = Math.max(1, Number.parseInt(pageValue ?? "1", 10) || 1);
-  const category =
-    slug === "all"
-      ? null
-      : await prisma.category.findUnique({
-          where: { slug },
-          include: { children: { orderBy: { position: "asc" } } },
-        });
+  const category = slug === "all" ? null : await getCategory(slug);
 
   if (slug !== "all" && !category) notFound();
 
@@ -89,12 +88,12 @@ export default async function CollectionPage({
     status: "active",
     ...(category
       ? {
-          categories: {
-            some: {
-              OR: [{ id: category.id }, { parentId: category.id }],
-            },
+        categories: {
+          some: {
+            OR: [{ id: category.id }, { parentId: category.id }],
           },
-        }
+        },
+      }
       : {}),
   };
 

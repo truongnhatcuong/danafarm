@@ -61,15 +61,14 @@ export function UserManager() {
         (r) => r.json(),
       );
       setItems(res.data ?? []);
-      setMeta(res.pagination ?? meta);
+      if (res.pagination) setMeta(res.pagination);
     },
     [search, roleFilter],
   );
 
   useEffect(() => {
-    // Initial/filter-driven fetch intentionally synchronizes remote user data with the view.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    void load();
+    const timer = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(timer);
   }, [load]);
 
   async function performRoleChange() {
@@ -130,7 +129,7 @@ export function UserManager() {
 
       <section className="rounded-2xl border border-admin-border bg-admin-surface shadow-xs">
         <div className="flex flex-col md:flex-row items-center justify-start gap-3 border-b border-admin-border p-4">
-          <div className="relative max-w-sm flex-1">
+          <div className="relative w-full md:max-w-sm flex-1">
             <Search
               size={15}
               className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-admin-muted"

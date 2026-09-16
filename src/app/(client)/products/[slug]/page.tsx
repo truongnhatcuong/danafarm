@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { cache } from "react";
 import { notFound } from "next/navigation";
 import { PackageCheck, ShieldCheck, Truck } from "lucide-react";
 import { ProductImageGallery } from "@/components/product/ProductImageGallery";
@@ -10,18 +11,26 @@ import { Container } from "@/components/ui/Container";
 import { prisma } from "@/lib/prisma";
 import { absoluteUrl } from "@/lib/seo";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 type ProductPageProps = { params: Promise<{ slug: string }> };
+
+const getProduct = cache((slug: string) =>
+  prisma.product.findUnique({
+    where: { slug },
+    include: {
+      images: { orderBy: { position: "asc" } },
+      variants: { orderBy: { position: "asc" } },
+      categories: { orderBy: { position: "asc" } },
+    },
+  }),
+);
 
 export async function generateMetadata({
   params,
 }: ProductPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const product = await prisma.product.findUnique({
-    where: { slug },
-    select: { name: true, shortDescription: true, images: { take: 1 } },
-  });
+  const product = await getProduct(slug);
 
   if (!product) return { title: "Không tìm thấy sản phẩm | DanaFarm" };
 
@@ -51,14 +60,7 @@ export async function generateMetadata({
 
 export default async function ProductPage({ params }: ProductPageProps) {
   const { slug } = await params;
-  const product = await prisma.product.findUnique({
-    where: { slug },
-    include: {
-      images: { orderBy: { position: "asc" } },
-      variants: { orderBy: { position: "asc" } },
-      categories: { orderBy: { position: "asc" } },
-    },
-  });
+  const product = await getProduct(slug);
 
   if (!product || product.status !== "active") notFound();
 
@@ -93,11 +95,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
         items={[
           ...(primaryCategory
             ? [
-                {
-                  label: primaryCategory.name,
-                  href: `/collections/${primaryCategory.slug}`,
-                },
-              ]
+              {
+                label: primaryCategory.name,
+                href: `/collections/${primaryCategory.slug}`,
+              },
+            ]
             : []),
           { label: product.name },
         ]}
@@ -176,36 +178,36 @@ export default async function ProductPage({ params }: ProductPageProps) {
         {(product.description ||
           product.usageGuide ||
           product.preservationGuide) && (
-          <section className="mt-12 rounded-2xl border border-shop-border bg-white p-5 md:p-8">
-            <h2 className="mb-5 text-xl font-bold uppercase text-shop-title">
-              Thông tin sản phẩm
-            </h2>
-            {product.description && (
-              <div
-                className="prose prose-sm max-w-none leading-7 text-shop-text/80"
-                dangerouslySetInnerHTML={{ __html: product.description }}
-              />
-            )}
-            {product.usageGuide && (
-              <div className="mt-6">
-                <h3 className="font-bold text-shop-title">Hướng dẫn sử dụng</h3>
-                <p className="mt-2 whitespace-pre-line text-sm leading-7">
-                  {product.usageGuide}
-                </p>
-              </div>
-            )}
-            {product.preservationGuide && (
-              <div className="mt-6">
-                <h3 className="font-bold text-shop-title">
-                  Hướng dẫn bảo quản
-                </h3>
-                <p className="mt-2 whitespace-pre-line text-sm leading-7">
-                  {product.preservationGuide}
-                </p>
-              </div>
-            )}
-          </section>
-        )}
+            <section className="mt-12 rounded-2xl border border-shop-border bg-white p-5 md:p-8">
+              <h2 className="mb-5 text-xl font-bold uppercase text-shop-title">
+                Thông tin sản phẩm
+              </h2>
+              {product.description && (
+                <div
+                  className="prose prose-sm max-w-none leading-7 text-shop-text/80"
+                  dangerouslySetInnerHTML={{ __html: product.description }}
+                />
+              )}
+              {product.usageGuide && (
+                <div className="mt-6">
+                  <h3 className="font-bold text-shop-title">Hướng dẫn sử dụng</h3>
+                  <p className="mt-2 whitespace-pre-line text-sm leading-7">
+                    {product.usageGuide}
+                  </p>
+                </div>
+              )}
+              {product.preservationGuide && (
+                <div className="mt-6">
+                  <h3 className="font-bold text-shop-title">
+                    Hướng dẫn bảo quản
+                  </h3>
+                  <p className="mt-2 whitespace-pre-line text-sm leading-7">
+                    {product.preservationGuide}
+                  </p>
+                </div>
+              )}
+            </section>
+          )}
       </Container>
     </>
   );

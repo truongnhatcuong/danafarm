@@ -8,7 +8,8 @@ import { ProductSection } from "@/components/home/ProductSection";
 import { VoucherSection } from "@/components/home/VoucherSection";
 import { prisma } from "@/lib/prisma";
 
-export const dynamic = "force-dynamic";
+// Keep time-bound homepage vouchers reasonably fresh while still allowing ISR.
+export const revalidate = 60;
 
 const HOME_TITLE = "DanaFarm - Trà ngon & Cà phê sạch từ Cầu Đất";
 const HOME_DESCRIPTION =

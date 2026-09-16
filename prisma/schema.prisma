@@ -124,11 +124,11 @@ model Page {
 model SiteSetting {
   id                  Int      @id @default(autoincrement())
   companyName         String   @default("CÔNG TY TNHH DANAFARM")
-  taxCode             String?  @default("5801501977")
+  taxCode             String?  @default("")
   addressBusiness     String?  @db.Text
   addressHeadquarters String?  @db.Text
-  phone               String?  @default("0385250680")
-  email               String?  @default("info@dalatfarm1994.com")
+  phone               String?  @default("0966306868")
+  email               String?  @default("danafarm.official@gmail.com")
   logoUrl             String?
   facebookUrl         String?
   zaloUrl             String?
@@ -138,7 +138,7 @@ model SiteSetting {
   logoUploadKey       String?
   originLat           Float?   @default(11.8203)
   originLng           Float?   @default(108.483)
-  shippingBaseFee     Int      @default(20000)
+  shippingBaseFee     Int      @default(00000)
   shippingBaseKm      Float    @default(10)
   shippingPerKmFee    Int      @default(3500)
   bankAccountName     String?  @default("CONG TY TNHH DANAFARM")
@@ -162,18 +162,19 @@ model NewsletterSubscriber {
 }
 
 model User {
-  id            Int            @id @default(autoincrement())
-  name          String
-  email         String         @unique
-  passwordHash  String
-  phone         String?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  role          UserRole       @default(CUSTOMER)
-  addresses     Address[]
-  orders        Order[]
-  sessions      Session[]
-  voucherUsages VoucherUsage[]
+  id                 Int                  @id @default(autoincrement())
+  name               String
+  email              String               @unique
+  passwordHash       String
+  phone              String?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  role               UserRole             @default(CUSTOMER)
+  addresses          Address[]
+  orders             Order[]
+  sessions           Session[]
+  voucherUsages      VoucherUsage[]
+  orderStatusChanges OrderStatusHistory[] @relation("OrderStatusChangedBy")
 
   @@index([role])
 }
@@ -224,39 +225,61 @@ model Voucher {
 }
 
 model Order {
-  id            Int           @id @default(autoincrement())
-  code          String        @unique
-  userId        Int
-  status        OrderStatus   @default(PENDING)
-  paymentMethod PaymentMethod @default(COD)
-  recipientName String
-  phone         String
-  provinceName  String
-  wardName      String
-  addressLine   String        @db.Text
-  latitude      Float?
-  longitude     Float?
-  distanceKm    Float?
-  note          String?       @db.Text
-  subtotal      Int
-  shippingFee   Int
-  discount      Int           @default(0)
-  total         Int
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  voucherCode   String?
-  voucherId     Int?
-  paidAt        DateTime?
-  paymentStatus PaymentStatus @default(PENDING)
-  user          User          @relation(fields: [userId], references: [id])
-  voucher       Voucher?      @relation("VoucherOrders", fields: [voucherId], references: [id])
-  items         OrderItem[]
-  voucherUsage  VoucherUsage? @relation("OrderVoucherUsage")
+  id                Int                  @id @default(autoincrement())
+  code              String               @unique
+  userId            Int
+  status            OrderStatus          @default(PENDING)
+  paymentMethod     PaymentMethod        @default(COD)
+  recipientName     String
+  phone             String
+  provinceName      String
+  wardName          String
+  addressLine       String               @db.Text
+  latitude          Float?
+  longitude         Float?
+  distanceKm        Float?
+  note              String?              @db.Text
+  subtotal          Int
+  shippingFee       Int
+  discount          Int                  @default(0)
+  total             Int
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  voucherCode       String?
+  voucherId         Int?
+  paidAt            DateTime?
+  paymentStatus     PaymentStatus        @default(PENDING)
+  idempotencyKey    String?              @unique
+  inventoryRestored Boolean              @default(false)
+  user              User                 @relation(fields: [userId], references: [id])
+  voucher           Voucher?             @relation("VoucherOrders", fields: [voucherId], references: [id])
+  items             OrderItem[]
+  voucherUsage      VoucherUsage?        @relation("OrderVoucherUsage")
+  statusHistory     OrderStatusHistory[]
 
   @@index([userId])
   @@index([status])
   @@index([paymentStatus])
   @@index([voucherId])
+}
+
+model OrderStatusHistory {
+  id              Int            @id @default(autoincrement())
+  orderId         Int
+  changedById     Int
+  actorType       String         @default("ADMIN")
+  changeType      String
+  previousStatus  OrderStatus?
+  nextStatus      OrderStatus?
+  previousPayment PaymentStatus?
+  nextPayment     PaymentStatus?
+  isUndo          Boolean        @default(false)
+  createdAt       DateTime       @default(now())
+  order           Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  changedBy       User           @relation("OrderStatusChangedBy", fields: [changedById], references: [id])
+
+  @@index([orderId, createdAt])
+  @@index([changedById])
 }
 
 model VoucherUsage {

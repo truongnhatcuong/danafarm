@@ -12,10 +12,10 @@ export function AccountShell({
     return (
         <>
             {breadcrumb}
-            <Container className="py-10 md:py-14">
-                <div className="grid gap-6 md:grid-cols-[240px_1fr] md:gap-8">
+            <Container className="py-6 sm:py-10 md:py-14">
+                <div className="grid gap-6 grid-cols-1 md:grid-cols-[240px_1fr] md:gap-8">
                     <AccountSidebar />
-                    <div className="space-y-6">{children}</div>
+                    <div className="min-w-0 space-y-6">{children}</div>
                 </div>
             </Container>
         </>

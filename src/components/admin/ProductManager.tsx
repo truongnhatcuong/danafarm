@@ -31,7 +31,7 @@ export function ProductManager() {
                 `/api/admin/products?page=${page}&search=${encodeURIComponent(search)}&sort=${sort}&direction=${direction}`,
             ).then((r) => r.json());
             setItems(result.data ?? []);
-            setMeta(result.pagination ?? meta);
+            if (result.pagination) setMeta(result.pagination);
         },
         [search, sort, direction],
     );
@@ -42,11 +42,13 @@ export function ProductManager() {
     }, []);
 
     useEffect(() => {
-        void load();
+        const timer = window.setTimeout(() => void load(), 0);
+        return () => window.clearTimeout(timer);
     }, [load]);
 
     useEffect(() => {
-        void loadCategories();
+        const timer = window.setTimeout(() => void loadCategories(), 0);
+        return () => window.clearTimeout(timer);
     }, [loadCategories]);
 
     const filteredItems = useMemo(() => {

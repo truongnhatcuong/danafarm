@@ -1,6 +1,3 @@
-import { ButtonLink } from "@/components/ui/Button";
-import { Container } from "@/components/ui/Container";
-
 const FACTS = [
   "Hái tay từng đọt non",
   "1.650m trên mực nước biển",

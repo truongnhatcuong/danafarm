@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import {
   FileText,
@@ -7,7 +8,6 @@ import {
   Search,
   Pencil,
   Trash2,
-  ExternalLink,
   Star,
   Loader2,
   X,
@@ -77,13 +77,14 @@ export function PostManager() {
         `/api/admin/posts?page=${page}&search=${encodeURIComponent(search)}&sort=${sort}&direction=${direction}`,
       ).then((r) => r.json());
       setItems(res.data ?? []);
-      setMeta(res.pagination ?? meta);
+      if (res.pagination) setMeta(res.pagination);
     },
     [search, sort, direction],
   );
 
   useEffect(() => {
-    void load();
+    const timer = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(timer);
   }, [load]);
 
   function openCreate() {
@@ -247,9 +248,11 @@ export function PostManager() {
                     <td className="p-3.5">
                       <div className="flex items-center gap-3">
                         {post.coverImageUrl ? (
-                          <img
+                          <Image
                             src={post.coverImageUrl}
                             alt=""
+                            width={48}
+                            height={48}
                             className="size-12 rounded-lg border border-admin-border object-cover"
                           />
                         ) : (
@@ -257,11 +260,12 @@ export function PostManager() {
                             <ImageOff size={16} />
                           </div>
                         )}
-                        <div>
-                          <strong className="block font-semibold text-admin-ink">
+                        <div className="min-w-0 max-w-[200px] sm:max-w-[300px] md:max-w-[450px]">
+                          <strong className="block truncate font-semibold text-admin-ink">
                             {post.title}
                           </strong>
-                          <span className="font-mono text-xs text-admin-muted">
+
+                          <span className="block truncate font-mono text-xs text-admin-muted">
                             /{post.slug}
                           </span>
                         </div>
@@ -419,9 +423,11 @@ export function PostManager() {
                 <div className="mt-2 flex items-center gap-3">
                   {form.coverImageUrl ? (
                     <div className="flex items-center gap-3">
-                      <img
+                      <Image
                         src={form.coverImageUrl}
                         alt=""
+                        width={96}
+                        height={64}
                         className="h-16 w-24 rounded-lg border border-admin-border object-cover"
                       />
                       <button

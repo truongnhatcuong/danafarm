@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import {
     Image as ImageIcon,
@@ -60,7 +61,8 @@ export function BannerManager() {
     }, []);
 
     useEffect(() => {
-        void load();
+        const timer = window.setTimeout(() => void load(), 0);
+        return () => window.clearTimeout(timer);
     }, [load]);
 
     function openCreate() {
@@ -158,9 +160,11 @@ export function BannerManager() {
                             className="group overflow-hidden rounded-2xl border border-admin-border bg-admin-surface shadow-xs transition hover:shadow-md"
                         >
                             <div className="relative aspect-21/9 w-full overflow-hidden bg-slate-900">
-                                <img
+                                <Image
                                     src={b.imageUrl}
                                     alt={b.title ?? ""}
+                                    width={1200}
+                                    height={514}
                                     className="h-full w-full object-cover transition duration-300 group-hover:scale-102"
                                 />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
@@ -245,9 +249,11 @@ export function BannerManager() {
                                 <div className="mt-2">
                                     {form.imageUrl ? (
                                         <div className="space-y-2">
-                                            <img
+                                            <Image
                                                 src={form.imageUrl}
                                                 alt=""
+                                                width={1200}
+                                                height={514}
                                                 className="aspect-21/9 w-full rounded-lg border border-admin-border object-cover"
                                             />
                                             <button

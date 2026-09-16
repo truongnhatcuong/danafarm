@@ -53,7 +53,8 @@ export function AddressSelector({
     );
 
     useEffect(() => {
-        loadAddresses();
+        const timer = window.setTimeout(() => void loadAddresses(), 0);
+        return () => window.clearTimeout(timer);
     }, [loadAddresses]);
 
     function selectAddress(address: CheckoutAddress) {

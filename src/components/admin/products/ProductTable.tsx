@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import {
   ChevronLeft,
   ChevronRight,
@@ -90,10 +91,12 @@ export function ProductTable({
                   <td className="p-4">
                     <div className="flex items-center gap-3">
                       {cover ? (
-                        <img
+                        <Image
                           src={cover.url}
                           alt={cover.alt ?? product.name}
-                          className="size-11 shrink-0 rounded-xl border border-admin-border object-cover"
+                          width={44}
+                        height={44}
+                        className="size-11 shrink-0 rounded-xl border border-admin-border object-cover"
                         />
                       ) : (
                         <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-admin-bg text-admin-muted">

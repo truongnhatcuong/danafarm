@@ -14,6 +14,7 @@ import {
 export const runtime = "nodejs";
 
 const createOrderSchema = z.object({
+  idempotencyKey: z.string().uuid("Mã phiên checkout không hợp lệ."),
   addressId: z.number().int().positive("Vui lòng chọn địa chỉ giao hàng."),
   paymentMethod: z.enum(["COD", "BANK_TRANSFER"]),
   note: z.string().trim().max(500).optional(),
@@ -90,12 +91,23 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
-  const { addressId, paymentMethod, note, items } = parsed.data;
+  const { idempotencyKey, addressId, paymentMethod, note, items } = parsed.data;
   const voucherCode = parsed.data.voucherCode
     ? normalizeVoucherCode(parsed.data.voucherCode)
     : null;
 
   try {
+    const existingOrder = await prisma.order.findUnique({
+      where: { idempotencyKey },
+      include: { items: true },
+    });
+    if (existingOrder) {
+      if (existingOrder.userId !== user.id) {
+        return Response.json({ error: "Phiên checkout không hợp lệ." }, { status: 409 });
+      }
+      return Response.json({ data: existingOrder, idempotent: true });
+    }
+
     const address = await prisma.address.findFirst({
       where: { id: addressId, userId: user.id },
     });
@@ -242,6 +254,7 @@ export async function POST(request: Request) {
             data: {
               code,
               userId: user.id,
+              idempotencyKey,
               paymentMethod,
               recipientName: address.recipientName,
               phone: address.phone,
@@ -285,6 +298,13 @@ export async function POST(request: Request) {
           error instanceof Prisma.PrismaClientKnownRequestError &&
           error.code === "P2002"
         ) {
+          const duplicate = await prisma.order.findUnique({
+            where: { idempotencyKey },
+            include: { items: true },
+          });
+          if (duplicate?.userId === user.id) {
+            return Response.json({ data: duplicate, idempotent: true });
+          }
           continue; // Trùng mã đơn hàng (rất hiếm) — thử sinh mã khác.
         }
         throw error;

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import {
   GripVertical,
@@ -55,10 +56,6 @@ export function ProductDrawer({
   onUploadError: (message: string) => void;
 }) {
   const [tab, setTab] = useState<TabId>("basic");
-
-  useEffect(() => {
-    if (open) setTab("basic");
-  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -126,11 +123,10 @@ export function ProductDrawer({
     return (
       <label
         key={c.id}
-        className={`cursor-pointer rounded-lg border px-3 py-1.5 text-sm transition ${
-          checked
+        className={`cursor-pointer rounded-lg border px-3 py-1.5 text-sm transition ${checked
             ? "border-admin-accent bg-admin-accent-soft text-admin-accent"
             : "border-admin-border text-admin-ink hover:bg-admin-bg"
-        }`}
+          }`}
       >
         <input
           type="checkbox"
@@ -179,11 +175,10 @@ export function ProductDrawer({
               key={t.id}
               type="button"
               onClick={() => setTab(t.id)}
-              className={`rounded-t-lg px-3.5 py-2 text-sm font-semibold transition ${
-                tab === t.id
+              className={`rounded-t-lg px-3.5 py-2 text-sm font-semibold transition ${tab === t.id
                   ? "border-b-2 border-admin-accent text-admin-accent"
                   : "border-b-2 border-transparent text-admin-muted hover:text-admin-ink"
-              }`}
+                }`}
             >
               {t.label}
               {t.id === "images" && value.images.length > 0 && (
@@ -434,9 +429,11 @@ export function ProductDrawer({
                       className="group relative overflow-hidden rounded-xl border border-admin-border bg-admin-bg/40 p-2 shadow-xs transition"
                     >
                       <div className="relative">
-                        <img
+                        <Image
                           src={image.url}
                           alt={image.alt ?? ""}
+                          width={400}
+                          height={400}
                           className="aspect-square w-full rounded-lg object-cover"
                         />
                         {i === 0 ? (
@@ -615,12 +612,12 @@ export function ProductDrawer({
                           value.variants.map((x, j) =>
                             j === i
                               ? {
-                                  ...x,
-                                  compareAtPrice:
-                                    e.target.value === ""
-                                      ? null
-                                      : Number(e.target.value),
-                                }
+                                ...x,
+                                compareAtPrice:
+                                  e.target.value === ""
+                                    ? null
+                                    : Number(e.target.value),
+                              }
                               : x,
                           ),
                         )

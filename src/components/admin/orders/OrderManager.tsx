@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, Eye, Receipt, Search } from "lucide-react";
-import { toast } from "sonner";
 import { formatCurrency } from "@/lib/utils";
 
 type OrderRow = {
@@ -79,8 +78,8 @@ export function OrderManager() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [paymentStatus, setPaymentStatus] = useState("");
-  const [busyId, setBusyId] = useState<number | null>(null);
-  const [busyPaymentId, setBusyPaymentId] = useState<number | null>(null);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   const load = useCallback(
     async (page = 1) => {
@@ -92,13 +91,15 @@ export function OrderManager() {
       });
       if (status) query.set("status", status);
       if (paymentStatus) query.set("paymentStatus", paymentStatus);
+      if (dateFrom) query.set("dateFrom", dateFrom);
+      if (dateTo) query.set("dateTo", dateTo);
       const res = await fetch(`/api/admin/orders?${query.toString()}`).then(
         (r) => r.json(),
       );
       setItems(res.data ?? []);
       setMeta((current) => res.pagination ?? current);
     },
-    [search, status, paymentStatus],
+    [search, status, paymentStatus, dateFrom, dateTo],
   );
 
   useEffect(() => {
@@ -106,57 +107,6 @@ export function OrderManager() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
   }, [load]);
-
-  async function updateStatus(order: OrderRow, nextStatus: string) {
-    setBusyId(order.id);
-    try {
-      const res = await fetch(`/api/admin/orders/${order.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: nextStatus }),
-      });
-      const result = await res.json();
-      if (!res.ok)
-        throw new Error(result.error ?? "Không thể cập nhật trạng thái.");
-      toast.success(`Đã cập nhật đơn #${order.code}.`);
-      await load(meta.page);
-    } catch (cause) {
-      toast.error(
-        cause instanceof Error
-          ? cause.message
-          : "Không thể kết nối tới máy chủ.",
-      );
-    } finally {
-      setBusyId(null);
-    }
-  }
-
-  async function updatePaymentStatus(
-    order: OrderRow,
-    nextPaymentStatus: string,
-  ) {
-    setBusyPaymentId(order.id);
-    try {
-      const res = await fetch(`/api/admin/orders/${order.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ paymentStatus: nextPaymentStatus }),
-      });
-      const result = await res.json();
-      if (!res.ok)
-        throw new Error(result.error ?? "Không thể cập nhật thanh toán.");
-      toast.success(`Đã cập nhật thanh toán đơn #${order.code}.`);
-      await load(meta.page);
-    } catch (cause) {
-      toast.error(
-        cause instanceof Error
-          ? cause.message
-          : "Không thể kết nối tới máy chủ.",
-      );
-    } finally {
-      setBusyPaymentId(null);
-    }
-  }
 
   return (
     <div className="space-y-6">
@@ -177,41 +127,100 @@ export function OrderManager() {
       </header>
 
       <section className="rounded-2xl border border-admin-border bg-admin-surface shadow-xs">
-        <div className="flex flex-wrap items-center gap-3 border-b border-admin-border p-4">
-          <div className="relative max-w-sm flex-1">
-            <Search
-              size={15}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-admin-muted"
-            />
-            <input
-              className={`${fieldClass} w-full pl-9`}
-              placeholder="Tìm mã đơn, tên người nhận, SĐT..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+        <div className="border-b border-admin-border p-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(240px,1fr)_auto_auto_auto] lg:items-end">
+            {/* Search */}
+            <div className="relative min-w-0">
+              <Search
+                size={15}
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-admin-muted"
+              />
+              <input
+                className={`${fieldClass} w-full pl-9`}
+                placeholder="Tìm mã đơn, tên người nhận, SĐT..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+
+            {/* Trạng thái đơn */}
+            <select
+              className={`${fieldClass} w-full lg:w-auto`}
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+            >
+              {STATUS_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+
+            {/* Trạng thái thanh toán */}
+            <select
+              className={`${fieldClass} w-full lg:w-auto`}
+              value={paymentStatus}
+              onChange={(e) => setPaymentStatus(e.target.value)}
+            >
+              {PAYMENT_STATUS_FILTER_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+
+            {/* Ngày */}
+            <div className="grid grid-cols-2 gap-2 sm:col-span-2 lg:col-span-1 lg:flex lg:items-center">
+              <div className="min-w-0">
+                <label
+                  htmlFor="order-date-from"
+                  className="mb-1 block text-xs font-medium text-admin-muted"
+                >
+                  Từ ngày
+                </label>
+
+                <input
+                  id="order-date-from"
+                  type="date"
+                  className={`${fieldClass} w-full`}
+                  value={dateFrom}
+                  max={dateTo || undefined}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                />
+              </div>
+
+              <div className="min-w-0">
+                <label
+                  htmlFor="order-date-to"
+                  className="mb-1 block text-xs font-medium text-admin-muted"
+                >
+                  Đến ngày
+                </label>
+
+                <input
+                  id="order-date-to"
+                  type="date"
+                  className={`${fieldClass} w-full`}
+                  value={dateTo}
+                  min={dateFrom || undefined}
+                  onChange={(e) => setDateTo(e.target.value)}
+                />
+              </div>
+
+              {(dateFrom || dateTo) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDateFrom("");
+                    setDateTo("");
+                  }}
+                  className="col-span-2 whitespace-nowrap rounded-lg border border-admin-border px-3 py-2.5 text-xs font-medium text-admin-muted transition hover:bg-admin-bg hover:text-admin-ink lg:self-end"
+                >
+                  Xóa ngày
+                </button>
+              )}
+            </div>
           </div>
-          <select
-            className={fieldClass}
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-          >
-            {STATUS_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-          <select
-            className={fieldClass}
-            value={paymentStatus}
-            onChange={(e) => setPaymentStatus(e.target.value)}
-          >
-            {PAYMENT_STATUS_FILTER_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
         </div>
 
         <div className="overflow-x-auto">
@@ -265,41 +274,25 @@ export function OrderManager() {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <select
-                        disabled={busyPaymentId === order.id}
-                        value={order.paymentStatus}
-                        onChange={(e) =>
-                          updatePaymentStatus(order, e.target.value)
-                        }
-                        className={`cursor-pointer rounded-full px-2.5 py-1 text-xs font-semibold outline-none ${PAYMENT_STATUS_CLASS[order.paymentStatus] ??
-                          "bg-gray-100 text-gray-700"
-                          }`}
-                        title="Bấm để cập nhật trạng thái thanh toán"
+                      <span
+                        className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${PAYMENT_STATUS_CLASS[order.paymentStatus] ?? "bg-gray-100 text-gray-700"}`}
                       >
-                        {PAYMENT_STATUS_OPTIONS.map((opt) => (
-                          <option key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </option>
-                        ))}
-                      </select>
+                        {PAYMENT_STATUS_OPTIONS.find(
+                          (option) => option.value === order.paymentStatus,
+                        )?.label ?? order.paymentStatus}
+                      </span>
                     </td>
                     <td className="px-4 py-3 font-semibold text-admin-ink">
                       {formatCurrency(order.total)}
                     </td>
                     <td className="px-4 py-3">
-                      <select
-                        disabled={busyId === order.id}
-                        value={order.status}
-                        onChange={(e) => updateStatus(order, e.target.value)}
-                        className={`cursor-pointer rounded-full border-0 px-3 py-1 text-xs font-semibold outline-none ${STATUS_CLASS[order.status] ?? "bg-gray-100 text-gray-700"}`}
-                        title="Bấm để cập nhật trạng thái đơn hàng"
+                      <span
+                        className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${STATUS_CLASS[order.status] ?? "bg-gray-100 text-gray-700"}`}
                       >
-                        {STATUS_OPTIONS.filter((o) => o.value).map((opt) => (
-                          <option key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </option>
-                        ))}
-                      </select>
+                        {STATUS_OPTIONS.find(
+                          (option) => option.value === order.status,
+                        )?.label ?? order.status}
+                      </span>
                     </td>
                     <td className="px-4 py-3 text-admin-muted">
                       {new Date(order.createdAt).toLocaleString("vi-VN")}

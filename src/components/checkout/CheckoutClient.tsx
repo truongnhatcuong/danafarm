@@ -40,6 +40,7 @@ export function CheckoutClient({
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
+  const [idempotencyKey] = useState(() => crypto.randomUUID());
   const [appliedVoucher, setAppliedVoucher] = useState<AppliedVoucher | null>(
     null,
   );
@@ -70,6 +71,7 @@ export function CheckoutClient({
   const total = Math.max(0, subtotal + quote.shippingFee - discount);
 
   async function handleSubmit() {
+    if (submitting || orderSuccess) return;
     if (!address) {
       toast.error("Vui lòng chọn địa chỉ giao hàng.");
       return;
@@ -82,6 +84,7 @@ export function CheckoutClient({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          idempotencyKey,
           addressId: address.id,
           paymentMethod,
           note: note.trim() || undefined,
@@ -105,6 +108,8 @@ export function CheckoutClient({
       );
       window.location.assign(orderUrl.href);
     } catch (cause) {
+      // Keep the same key after network/server uncertainty so a retry returns
+      // the already-created order instead of claiming stock and voucher again.
       toast.error(
         cause instanceof Error
           ? cause.message
@@ -138,7 +143,7 @@ export function CheckoutClient({
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+    <div className="grid gap-6 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px]">
       <div className="space-y-6">
         <section className="rounded-2xl border border-shop-border bg-white p-5 md:p-6">
           <h2 className="mb-4 font-bold text-shop-title">

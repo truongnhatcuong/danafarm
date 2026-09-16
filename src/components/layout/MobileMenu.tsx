@@ -3,18 +3,55 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Menu, X, ChevronDown, LogIn, UserPlus } from "lucide-react";
+import { useRouter } from "next/navigation";
+import {
+  Menu,
+  X,
+  ChevronDown,
+  LogIn,
+  UserPlus,
+  UserRound,
+  Package,
+  ShieldCheck,
+  LogOut,
+} from "lucide-react";
 import { NAV_ITEMS } from "@/lib/constants";
+import { deactivateCart } from "@/stores/cart-store";
 import { SearchBox } from "./SearchBox";
 import { getCategoryImageUrl, type NavCategoryItem } from "./CategoryNavMenu";
 
+export type MobileMenuUser = {
+  id: number;
+  name: string;
+  email: string;
+  phone?: string | null;
+  role: string;
+} | null;
+
 export function MobileMenu({
   categories,
+  user,
 }: {
   categories?: NavCategoryItem[];
+  user?: MobileMenuUser;
 } = {}) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [openSub, setOpenSub] = useState<string | null>(null);
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  async function handleLogout() {
+    setLoggingOut(true);
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+      deactivateCart();
+      setOpen(false);
+      router.push("/");
+      router.refresh();
+    } finally {
+      setLoggingOut(false);
+    }
+  }
 
   const navList: {
     label: string;
@@ -24,23 +61,23 @@ export function MobileMenu({
   }[] =
     categories && categories.length > 0
       ? categories.map((c) => ({
-          label: c.name,
-          slug: c.slug,
-          imageUrl: c.imageUrl,
-          children: c.children?.map((ch) => ({
-            label: ch.name,
-            slug: ch.slug,
-          })),
-        }))
+        label: c.name,
+        slug: c.slug,
+        imageUrl: c.imageUrl,
+        children: c.children?.map((ch) => ({
+          label: ch.name,
+          slug: ch.slug,
+        })),
+      }))
       : NAV_ITEMS.map((item) => ({
-          label: item.label,
-          slug: item.slug,
-          imageUrl: null,
-          children: item.children?.map((ch) => ({
-            label: ch.label,
-            slug: ch.slug,
-          })),
-        }));
+        label: item.label,
+        slug: item.slug,
+        imageUrl: null,
+        children: item.children?.map((ch) => ({
+          label: ch.label,
+          slug: ch.slug,
+        })),
+      }));
 
   return (
     <>
@@ -73,22 +110,74 @@ export function MobileMenu({
               <SearchBox className="border-shop-border" />
             </div>
             <nav className="px-2 pb-6">
-              <div className="mb-3 grid grid-cols-2 gap-2 px-2 pt-2">
-                <Link
-                  href="/login"
-                  onClick={() => setOpen(false)}
-                  className="flex items-center justify-center gap-2 rounded-lg bg-shop-main px-3 py-2.5 text-sm font-semibold !text-white hover:bg-shop-hover transition-colors shadow-sm"
-                >
-                  <LogIn size={17} /> Đăng nhập
-                </Link>
-                <Link
-                  href="/register"
-                  onClick={() => setOpen(false)}
-                  className="flex items-center justify-center gap-2 rounded-lg border border-shop-main px-3 py-2.5 text-sm font-semibold !text-shop-main hover:bg-shop-main/10 transition-colors"
-                >
-                  <UserPlus size={17} /> Đăng ký
-                </Link>
-              </div>
+              {user ? (
+                <div className="mb-3 border-b border-shop-border/60 pb-3">
+                  <div className="mx-2 mb-2 flex items-center gap-3 rounded-xl bg-shop-bg/70 p-3">
+                    <div className="grid size-10 shrink-0 place-items-center rounded-full bg-shop-main text-base font-bold text-white shadow-xs">
+                      {user.name ? user.name.charAt(0).toUpperCase() : "U"}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-bold text-shop-title">
+                        {user.name}
+                      </p>
+                      <p className="truncate text-xs text-shop-text/60">
+                        {user.email}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-0.5 px-1">
+                    <Link
+                      href="/account"
+                      onClick={() => setOpen(false)}
+                      className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium !text-shop-title transition-colors hover:bg-shop-bg hover:!text-shop-main"
+                    >
+                      <UserRound size={17} className="text-shop-main" /> Tài khoản của tôi
+                    </Link>
+                    <Link
+                      href="/account/orders"
+                      onClick={() => setOpen(false)}
+                      className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium !text-shop-title transition-colors hover:bg-shop-bg hover:!text-shop-main"
+                    >
+                      <Package size={17} className="text-shop-main" /> Đơn hàng của tôi
+                    </Link>
+                    {user.role === "ADMIN" && (
+                      <Link
+                        href="/admin"
+                        onClick={() => setOpen(false)}
+                        className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium !text-shop-title transition-colors hover:bg-shop-bg hover:!text-shop-main"
+                      >
+                        <ShieldCheck size={17} className="text-purple-600" /> Quản trị website
+                      </Link>
+                    )}
+                    <button
+                      type="button"
+                      disabled={loggingOut}
+                      onClick={handleLogout}
+                      className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-rose-600 transition-colors hover:bg-rose-50 disabled:opacity-60"
+                    >
+                      <LogOut size={17} /> {loggingOut ? "Đang đăng xuất..." : "Đăng xuất"}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="mb-3 grid grid-cols-2 gap-2 px-2 pt-2">
+                  <Link
+                    href="/login"
+                    onClick={() => setOpen(false)}
+                    className="flex items-center justify-center gap-2 rounded-lg bg-shop-main px-3 py-2.5 text-sm font-semibold !text-white shadow-sm transition-colors hover:bg-shop-hover"
+                  >
+                    <LogIn size={17} /> Đăng nhập
+                  </Link>
+                  <Link
+                    href="/register"
+                    onClick={() => setOpen(false)}
+                    className="flex items-center justify-center gap-2 rounded-lg border border-shop-main px-3 py-2.5 text-sm font-semibold !text-shop-main transition-colors hover:bg-shop-main/10"
+                  >
+                    <UserPlus size={17} /> Đăng ký
+                  </Link>
+                </div>
+              )}
               {[
                 ["Về chúng tôi", "/pages/gioi-thieu-dalat-farm"],
                 ["Bài viết", "/blogs/news"],
@@ -139,9 +228,8 @@ export function MobileMenu({
                       >
                         <ChevronDown
                           size={18}
-                          className={`transition-transform duration-200 ${
-                            openSub === item.slug ? "rotate-180" : ""
-                          }`}
+                          className={`transition-transform duration-200 ${openSub === item.slug ? "rotate-180" : ""
+                            }`}
                         />
                       </button>
                     )}

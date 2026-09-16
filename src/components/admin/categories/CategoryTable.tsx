@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import {
   ChevronLeft,
   ChevronRight,
@@ -117,9 +118,11 @@ export function CategoryTable({
                 <td className="p-4">
                   <div className="flex items-center gap-3">
                     {item.imageUrl ? (
-                      <img
+                      <Image
                         src={item.imageUrl}
                         alt={item.name}
+                        width={44}
+                        height={44}
                         className="size-11 shrink-0 rounded-xl border border-admin-border object-cover"
                       />
                     ) : (

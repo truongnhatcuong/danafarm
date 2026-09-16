@@ -34,7 +34,8 @@ export function AddressList() {
     }, []);
 
     useEffect(() => {
-        loadAddresses();
+        const timer = window.setTimeout(() => void loadAddresses(), 0);
+        return () => window.clearTimeout(timer);
     }, [loadAddresses]);
 
     async function setDefault(id: number) {

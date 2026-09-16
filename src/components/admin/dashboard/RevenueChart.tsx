@@ -60,7 +60,8 @@ export function RevenueChart() {
     }, []);
 
     useEffect(() => {
-        void load(range);
+        const timer = window.setTimeout(() => void load(range), 0);
+        return () => window.clearTimeout(timer);
     }, [range, load]);
 
     return (

@@ -45,15 +45,12 @@ export function ProductToolbar({
 }) {
     const [draft, setDraft] = useState(search);
 
-    useEffect(() => setDraft(search), [search]);
-
     useEffect(() => {
         const timer = setTimeout(() => {
             if (draft !== search) onSearchChange(draft);
         }, 350);
         return () => clearTimeout(timer);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [draft]);
+    }, [draft, onSearchChange, search]);
 
     const sortValue = `${sort}-${direction}`;
 

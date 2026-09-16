@@ -23,7 +23,7 @@ export function CategoryManager() {
                 `/api/admin/categories?page=${page}&search=${encodeURIComponent(search)}&sort=${sort}&direction=${direction}`,
             ).then((r) => r.json());
             setItems(result.data ?? []);
-            setMeta(result.pagination ?? meta);
+            if (result.pagination) setMeta(result.pagination);
         },
         [search, sort, direction],
     );
@@ -34,8 +34,10 @@ export function CategoryManager() {
     }, []);
 
     useEffect(() => {
-        void load();
-        void loadOptions();
+        const initialize = async () => {
+            await Promise.all([load(), loadOptions()]);
+        };
+        void initialize();
     }, [load, loadOptions]);
 
     function openEdit(item: Category) {
@@ -102,7 +104,7 @@ export function CategoryManager() {
         toast(`Xóa danh mục "${item.name}"?`, {
             description: "Hành động này không thể hoàn tác.",
             action: { label: "Xóa", onClick: () => void performDelete(item) },
-            cancel: { label: "Hủy", onClick: () => {} },
+            cancel: { label: "Hủy", onClick: () => { } },
         });
     }
 

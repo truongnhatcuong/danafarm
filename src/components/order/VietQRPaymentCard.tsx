@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import { Check, Copy, QrCode } from "lucide-react";
 import { toast } from "sonner";
@@ -56,10 +57,12 @@ export function VietQRPaymentCard({
         {/* Khung mã QR */}
         <div className="flex flex-col items-center justify-center rounded-xl border border-shop-border bg-white p-3 text-center shadow-xs">
           <div className="relative size-56 overflow-hidden rounded-lg bg-white">
-            <img
+            <Image
               src={qrUrl}
               alt={`VietQR thanh toán đơn hàng ${orderCode}`}
-              className="size-full object-contain"
+              fill
+              sizes="224px"
+              className="object-contain"
             />
           </div>
           <span className="mt-2 text-[11px] font-semibold text-shop-main">

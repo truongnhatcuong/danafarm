@@ -26,13 +26,7 @@ export function AddressForm({ onSaved }: { onSaved: (createdId?: number) => void
     }, []);
 
     useEffect(() => {
-        if (!provinceCode) {
-            setWards([]);
-            setWardCode("");
-            return;
-        }
-        setLoadingWards(true);
-        setWardCode("");
+        if (!provinceCode) return;
         fetchWardsByProvince(provinceCode)
             .then((data) => setWards(data.sort((a, b) => a.name.localeCompare(b.name))))
             .catch(() => setError("Không thể tải danh sách phường/xã. Vui lòng thử lại."))
@@ -108,7 +102,13 @@ export function AddressForm({ onSaved }: { onSaved: (createdId?: number) => void
                         required
                         className={inputClass}
                         value={provinceCode}
-                        onChange={(event) => setProvinceCode(event.target.value)}
+                        onChange={(event) => {
+                            const nextProvinceCode = event.target.value;
+                            setProvinceCode(nextProvinceCode);
+                            setWardCode("");
+                            setWards([]);
+                            setLoadingWards(Boolean(nextProvinceCode));
+                        }}
                         disabled={loadingProvinces}
                     >
                         <option value="">{loadingProvinces ? "Đang tải..." : "Chọn tỉnh/thành phố"}</option>

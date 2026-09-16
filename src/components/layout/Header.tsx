@@ -70,7 +70,7 @@ export async function Header() {
     <header id="site-header" className="relative z-40 shadow-sm">
       <div className="bg-shop-main text-white">
         <Container className="flex min-h-16 items-center gap-3 py-2 md:min-h-28 md:gap-7 md:py-4">
-          <MobileMenu categories={categories} />
+          <MobileMenu categories={categories} user={user} />
           <Link href="/" className="shrink-0" aria-label="DanaFarm - Trang chủ">
             <Image
               src={siteInfo.logoUrl}

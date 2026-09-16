@@ -5,7 +5,7 @@ import { Container } from "@/components/ui/Container";
 import { Pagination } from "@/components/ui/Pagination";
 import { prisma } from "@/lib/prisma";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: "Tin tức | DanaFarm",
