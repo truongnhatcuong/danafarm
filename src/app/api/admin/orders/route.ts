@@ -5,26 +5,32 @@ import { prisma } from "@/lib/prisma";
 export const runtime = "nodejs";
 const sorts = ["createdAt", "total"] as const;
 const ORDER_STATUSES = ["PENDING", "CONFIRMED", "PACKING", "SHIPPING", "DELIVERED", "CANCELLED"] as const;
+const PAYMENT_STATUSES = ["PENDING", "PAID", "CANCELLED", "FAILED"] as const;
 
 export async function GET(request: Request) {
     const auth = await authorizeAdminApi();
     if (auth.response) return auth.response;
 
     const query = parseAdminListQuery(request, sorts, "createdAt");
-    const status = new URL(request.url).searchParams.get("status");
+    const searchParams = new URL(request.url).searchParams;
+    const status = searchParams.get("status");
+    const paymentStatus = searchParams.get("paymentStatus");
 
     const where: Prisma.OrderWhereInput = {
         ...(status && (ORDER_STATUSES as readonly string[]).includes(status)
             ? { status: status as (typeof ORDER_STATUSES)[number] }
             : {}),
+        ...(paymentStatus && (PAYMENT_STATUSES as readonly string[]).includes(paymentStatus)
+            ? { paymentStatus: paymentStatus as (typeof PAYMENT_STATUSES)[number] }
+            : {}),
         ...(query.search
             ? {
-                  OR: [
-                      { code: { contains: query.search } },
-                      { recipientName: { contains: query.search } },
-                      { phone: { contains: query.search } },
-                  ],
-              }
+                OR: [
+                    { code: { contains: query.search } },
+                    { recipientName: { contains: query.search } },
+                    { phone: { contains: query.search } },
+                ],
+            }
             : {}),
     };
 

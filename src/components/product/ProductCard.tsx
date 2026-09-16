@@ -2,11 +2,13 @@ import Link from "next/link";
 import Image from "next/image";
 import { formatCurrency, discountPercent } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
+import { ProductCardCartButton } from "@/components/product/ProductCardCartButton";
 import type { ProductWithRelations } from "@/types";
 
 export function ProductCard({ product }: { product: ProductWithRelations }) {
     const image = product.images[0];
     const discount = discountPercent(product.price, product.compareAtPrice);
+    const defaultVariant = product.variants[0] ?? null;
 
     return (
         <div className="group relative bg-white rounded-xl border border-shop-border overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
@@ -43,13 +45,26 @@ export function ProductCard({ product }: { product: ProductWithRelations }) {
                     </Link>
                 </h3>
                 <div className="mt-2 flex items-baseline gap-2">
-                    <span className="text-shop-main font-bold">{formatCurrency(product.price)}</span>
+                    <span className="text-shop-main font-bold">{formatCurrency(defaultVariant?.price ?? product.price)}</span>
                     {product.compareAtPrice && product.compareAtPrice > product.price && (
                         <span className="text-xs text-shop-text/50 line-through">
                             {formatCurrency(product.compareAtPrice)}
                         </span>
                     )}
                 </div>
+                <ProductCardCartButton
+                    stock={product.quantity}
+                    item={{
+                        productId: product.id,
+                        variantId: defaultVariant?.id ?? null,
+                        slug: product.slug,
+                        name: product.name,
+                        variantName: defaultVariant?.name ?? null,
+                        imageUrl: image?.url ?? null,
+                        unitLabel: product.unitLabel,
+                        price: defaultVariant?.price ?? product.price,
+                    }}
+                />
             </div>
         </div>
     );

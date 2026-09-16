@@ -16,6 +16,7 @@ export function CartHeaderLink({ mobile = false }: { mobile?: boolean }) {
     return (
       <Link
         href="/cart"
+        data-cart-target
         className="relative flex items-center justify-center p-2 text-white transition-colors hover:text-white/80"
         aria-label={`Giỏ hàng có ${count} sản phẩm`}
       >
@@ -32,6 +33,7 @@ export function CartHeaderLink({ mobile = false }: { mobile?: boolean }) {
   return (
     <Link
       href="/cart"
+      data-cart-target
       className="relative flex items-center gap-2 px-5 text-sm hover:text-white/80"
       aria-label={`Giỏ hàng có ${count} sản phẩm`}
     >

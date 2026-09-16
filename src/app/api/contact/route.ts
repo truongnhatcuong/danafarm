@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { sendContactEmail } from "@/lib/contact-email";
 import { enforceRateLimit, RATE_LIMIT_POLICIES } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
@@ -41,18 +41,12 @@ export async function POST(request: Request) {
       );
     }
 
-    const contact = await prisma.contactMessage.create({
-      data: {
-        ...parsed.data,
-        phone: parsed.data.phone || null,
-      },
-      select: { id: true, createdAt: true },
+    await sendContactEmail({
+      ...parsed.data,
+      phone: parsed.data.phone || undefined,
     });
 
-    return Response.json(
-      { data: contact, message: "DanaFarm đã nhận thông tin liên hệ." },
-      { status: 201 },
-    );
+    return Response.json({ message: "DanaFarm đã nhận thông tin liên hệ." });
   } catch (error) {
     if (error instanceof SyntaxError) {
       return Response.json(

@@ -7,7 +7,6 @@ import {
     ImageIcon,
     LayoutGrid,
     Leaf,
-    MessageSquare,
     Newspaper,
     Package,
     Receipt,
@@ -43,10 +42,7 @@ const groups: NavGroup[] = [
     },
     {
         title: "Tương tác",
-        links: [
-            { label: "Khách hàng", href: "/admin/users", icon: Users },
-            { label: "Liên hệ", href: "/admin/contacts", icon: MessageSquare },
-        ],
+        links: [{ label: "Khách hàng", href: "/admin/users", icon: Users }],
     },
     { title: "Cài đặt", links: [{ label: "Cài đặt", href: "/admin/settings", icon: Settings }] },
 ];
@@ -114,8 +110,8 @@ export function AdminSidebar({
                                             href={link.href}
                                             onClick={onClose}
                                             className={`group relative flex items-center gap-3 rounded-lg py-2.5 pr-3 pl-3 text-[13.5px] transition ${active
-                                                    ? "bg-white/[0.07] font-semibold text-white"
-                                                    : "text-admin-sidebar-muted hover:bg-white/5 hover:text-white"
+                                                ? "bg-white/[0.07] font-semibold text-white"
+                                                : "text-admin-sidebar-muted hover:bg-white/5 hover:text-white"
                                                 }`}
                                         >
                                             <span

@@ -2,9 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
-  Users,
   Search,
-  Shield,
   ShieldCheck,
   UserCheck,
   Trash2,
@@ -46,6 +44,8 @@ export function UserManager() {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<UserItem | null>(null);
+  const [roleTarget, setRoleTarget] = useState<UserItem | null>(null);
+  const [changingRole, setChangingRole] = useState(false);
 
   const load = useCallback(
     async (page = 1) => {
@@ -67,23 +67,32 @@ export function UserManager() {
   );
 
   useEffect(() => {
+    // Initial/filter-driven fetch intentionally synchronizes remote user data with the view.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
   }, [load]);
 
-  async function toggleRole(u: UserItem) {
-    const nextRole = u.role === "ADMIN" ? "CUSTOMER" : "ADMIN";
-    const res = await fetch(`/api/admin/users/${u.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ role: nextRole }),
-    });
-    const result = await res.json();
-    if (!res.ok) {
-      toast.error(result.error ?? "Không thể đổi vai trò.");
-      return;
+  async function performRoleChange() {
+    if (!roleTarget) return;
+    const nextRole = roleTarget.role === "ADMIN" ? "CUSTOMER" : "ADMIN";
+    setChangingRole(true);
+    try {
+      const res = await fetch(`/api/admin/users/${roleTarget.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: nextRole }),
+      });
+      const result = await res.json();
+      if (!res.ok) {
+        toast.error(result.error ?? "Không thể đổi vai trò.");
+        return;
+      }
+      toast.success(`Đã đổi vai trò của ${roleTarget.name} thành ${nextRole}.`);
+      setRoleTarget(null);
+      await load(meta.page);
+    } finally {
+      setChangingRole(false);
     }
-    toast.success(`Đã đổi vai trò của ${u.name} thành ${nextRole}.`);
-    await load(meta.page);
   }
 
   async function performDelete() {
@@ -195,11 +204,10 @@ export function UserManager() {
                     </td>
                     <td className="p-3.5">
                       <span
-                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                          u.role === "ADMIN"
-                            ? "bg-purple-50 text-purple-700 ring-1 ring-purple-600/20"
-                            : "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600/20"
-                        }`}
+                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${u.role === "ADMIN"
+                          ? "bg-purple-50 text-purple-700 ring-1 ring-purple-600/20"
+                          : "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600/20"
+                          }`}
                       >
                         {u.role === "ADMIN" ? (
                           <ShieldCheck size={12} />
@@ -221,7 +229,7 @@ export function UserManager() {
                               ? "Chuyển thành khách hàng"
                               : "Phân quyền Quản trị"
                           }
-                          onClick={() => toggleRole(u)}
+                          onClick={() => setRoleTarget(u)}
                           className="rounded-lg border border-admin-border px-2.5 py-1 text-xs font-medium text-admin-muted transition hover:bg-admin-bg hover:text-admin-ink"
                         >
                           Đổi vai trò
@@ -269,6 +277,53 @@ export function UserManager() {
           </div>
         </div>
       </section>
+
+      {/* Confirm Đổi Vai Trò */}
+      {roleTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-[2px]">
+          <div className="w-full max-w-sm rounded-2xl border border-admin-border bg-admin-surface p-5 shadow-2xl">
+            <h3 className="text-base font-bold text-admin-ink">
+              Xác nhận đổi vai trò?
+            </h3>
+            <p className="mt-1 text-sm text-admin-muted">
+              Bạn có chắc muốn chuyển{" "}
+              <strong>&ldquo;{roleTarget.name}&rdquo;</strong> (
+              {roleTarget.email}) từ{" "}
+              <strong>
+                {roleTarget.role === "ADMIN" ? "Quản trị viên" : "Khách hàng"}
+              </strong>{" "}
+              thành{" "}
+              <strong>
+                {roleTarget.role === "ADMIN" ? "Khách hàng" : "Quản trị viên"}
+              </strong>
+              ?
+              {roleTarget.role !== "ADMIN" && (
+                <span className="mt-1 block text-amber-600">
+                  Tài khoản này sẽ có toàn quyền truy cập trang quản trị.
+                </span>
+              )}
+            </p>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setRoleTarget(null)}
+                disabled={changingRole}
+                className="rounded-lg border border-admin-border px-4 py-2 text-sm font-medium text-admin-ink hover:bg-admin-bg disabled:opacity-50"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={performRoleChange}
+                disabled={changingRole}
+                className="rounded-lg bg-admin-accent px-4 py-2 text-sm font-bold text-white shadow-xs hover:brightness-95 disabled:opacity-50"
+              >
+                {changingRole ? "Đang xử lý..." : "Xác nhận đổi vai trò"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Confirm Xóa Tài khoản */}
       {deleteTarget && (

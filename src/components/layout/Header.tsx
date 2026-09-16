@@ -45,26 +45,26 @@ export async function Header() {
   const categories =
     dbCategories.length > 0
       ? dbCategories.map((c) => ({
-          id: c.id,
-          name: c.name,
-          slug: c.slug,
-          imageUrl: c.imageUrl,
-          children: c.children.map((ch) => ({
-            id: ch.id,
-            name: ch.name,
-            slug: ch.slug,
-          })),
-        }))
+        id: c.id,
+        name: c.name,
+        slug: c.slug,
+        imageUrl: c.imageUrl,
+        children: c.children.map((ch) => ({
+          id: ch.id,
+          name: ch.name,
+          slug: ch.slug,
+        })),
+      }))
       : NAV_ITEMS.map((item, idx) => ({
-          id: idx + 1,
-          name: item.label,
-          slug: item.slug,
-          children: item.children?.map((ch, chIdx) => ({
-            id: (idx + 1) * 100 + chIdx,
-            name: ch.label,
-            slug: ch.slug,
-          })),
-        }));
+        id: idx + 1,
+        name: item.label,
+        slug: item.slug,
+        children: item.children?.map((ch, chIdx) => ({
+          id: (idx + 1) * 100 + chIdx,
+          name: ch.label,
+          slug: ch.slug,
+        })),
+      }));
 
   return (
     <header id="site-header" className="relative z-40 shadow-sm">
@@ -149,13 +149,14 @@ export async function Header() {
                         • &nbsp;Quản trị website
                       </Link>
                     ) : (
-                      <Link
-                        href="/account/orders"
-                        className="block rounded-md px-3 py-2 text-sm hover:bg-shop-bg hover:text-shop-main"
-                      >
-                        • &nbsp;Đơn hàng của tôi
-                      </Link>
+                      ""
                     )}
+                    <Link
+                      href="/account/orders"
+                      className="block rounded-md px-3 py-2 text-sm hover:bg-shop-bg hover:text-shop-main"
+                    >
+                      • &nbsp;Đơn hàng của tôi
+                    </Link>
 
                     <div className="pl-3">
                       <NavLogoutButton />

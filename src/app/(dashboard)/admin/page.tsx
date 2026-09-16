@@ -2,13 +2,10 @@ import Link from "next/link";
 import {
     ArrowUpRight,
     FileText,
-    Inbox,
     LayoutGrid,
-    Mail,
     Minus,
     Newspaper,
     Package,
-    Phone,
     PlusCircle,
     Receipt,
     TrendingDown,
@@ -21,56 +18,117 @@ import { RevenueChart } from "@/components/admin/dashboard/RevenueChart";
 import { prisma } from "@/lib/prisma";
 
 const DAY_MS = 86_400_000;
+const VIETNAM_OFFSET_MS = 7 * 60 * 60 * 1_000;
 
-async function countWithTrend(
+type DashboardPeriod = "today" | "week" | "month" | "quarter" | "year" | "all";
+
+type PeriodBounds = {
+    currentStart: Date | null;
+    previousStart: Date;
+    previousEnd: Date;
+};
+
+const PERIOD_OPTIONS: { value: DashboardPeriod; label: string; cardLabel: string }[] = [
+    { value: "today", label: "Hôm nay", cardLabel: "hôm nay" },
+    { value: "week", label: "Tuần này", cardLabel: "tuần này" },
+    { value: "month", label: "Tháng này", cardLabel: "tháng này" },
+    { value: "quarter", label: "Quý này", cardLabel: "quý này" },
+    { value: "year", label: "Năm nay", cardLabel: "năm nay" },
+    { value: "all", label: "Tổng cộng", cardLabel: "tổng cộng" },
+];
+
+function getPeriodBounds(period: DashboardPeriod, now = new Date()): PeriodBounds {
+    const vietnamNow = new Date(now.getTime() + VIETNAM_OFFSET_MS);
+    const year = vietnamNow.getUTCFullYear();
+    const month = vietnamNow.getUTCMonth();
+    const day = vietnamNow.getUTCDate();
+    const daysSinceMonday = (vietnamNow.getUTCDay() + 6) % 7;
+    const toUtc = (date: Date) => new Date(date.getTime() - VIETNAM_OFFSET_MS);
+
+    let currentStart: Date;
+    let previousStart: Date;
+    let previousEnd: Date;
+
+    if (period === "today") {
+        currentStart = toUtc(new Date(Date.UTC(year, month, day)));
+        previousStart = new Date(currentStart.getTime() - DAY_MS);
+        previousEnd = currentStart;
+    } else if (period === "week") {
+        currentStart = toUtc(new Date(Date.UTC(year, month, day - daysSinceMonday)));
+        previousStart = new Date(currentStart.getTime() - 7 * DAY_MS);
+        previousEnd = currentStart;
+    } else if (period === "month") {
+        currentStart = toUtc(new Date(Date.UTC(year, month, 1)));
+        previousStart = toUtc(new Date(Date.UTC(year, month - 1, 1)));
+        previousEnd = currentStart;
+    } else if (period === "quarter") {
+        const quarterStartMonth = Math.floor(month / 3) * 3;
+        currentStart = toUtc(new Date(Date.UTC(year, quarterStartMonth, 1)));
+        previousStart = toUtc(new Date(Date.UTC(year, quarterStartMonth - 3, 1)));
+        previousEnd = currentStart;
+    } else if (period === "year") {
+        currentStart = toUtc(new Date(Date.UTC(year, 0, 1)));
+        previousStart = toUtc(new Date(Date.UTC(year - 1, 0, 1)));
+        previousEnd = currentStart;
+    } else {
+        const start30 = new Date(now.getTime() - 30 * DAY_MS);
+        return {
+            currentStart: null,
+            previousStart: new Date(start30.getTime() - 30 * DAY_MS),
+            previousEnd: start30,
+        };
+    }
+
+    return { currentStart, previousStart, previousEnd };
+}
+
+async function countForPeriod(
     model: { count: (args?: { where?: { createdAt?: { gte?: Date; lt?: Date } } }) => Promise<number> },
+    bounds: PeriodBounds,
 ) {
-    const now = new Date();
-    const start30 = new Date(now.getTime() - 30 * DAY_MS);
-    const start60 = new Date(now.getTime() - 60 * DAY_MS);
-
+    const currentWhere = bounds.currentStart
+        ? { createdAt: { gte: bounds.currentStart } }
+        : { createdAt: { gte: bounds.previousEnd } };
     const [total, current, previous] = await Promise.all([
         model.count(),
-        model.count({ where: { createdAt: { gte: start30 } } }),
-        model.count({ where: { createdAt: { gte: start60, lt: start30 } } }),
+        model.count({ where: currentWhere }),
+        model.count({ where: { createdAt: { gte: bounds.previousStart, lt: bounds.previousEnd } } }),
     ]);
-
-    return { total, current, previous };
+    return { total: bounds.currentStart ? current : total, current, previous };
 }
 
-async function revenueWithTrend() {
-    const now = new Date();
-    const start30 = new Date(now.getTime() - 30 * DAY_MS);
-    const start60 = new Date(now.getTime() - 60 * DAY_MS);
-
-    const [totalAgg, currentAgg, previousAgg] = await Promise.all([
-        prisma.order.aggregate({ _sum: { total: true }, where: { status: { not: "CANCELLED" } } }),
-        prisma.order.aggregate({
-            _sum: { total: true },
-            where: { status: { not: "CANCELLED" }, createdAt: { gte: start30 } },
-        }),
-        prisma.order.aggregate({
-            _sum: { total: true },
-            where: { status: { not: "CANCELLED" }, createdAt: { gte: start60, lt: start30 } },
-        }),
-    ]);
-
-    return {
-        total: totalAgg._sum.total ?? 0,
-        current: currentAgg._sum.total ?? 0,
-        previous: previousAgg._sum.total ?? 0,
+async function revenueForPeriod(bounds: PeriodBounds) {
+    const baseWhere = { status: { not: "CANCELLED" as const } };
+    const currentWhere = {
+        ...baseWhere,
+        createdAt: { gte: bounds.currentStart ?? bounds.previousEnd },
     };
+    const [totalAgg, currentAgg, previousAgg] = await Promise.all([
+        prisma.order.aggregate({ _sum: { total: true }, where: baseWhere }),
+        prisma.order.aggregate({ _sum: { total: true }, where: currentWhere }),
+        prisma.order.aggregate({
+            _sum: { total: true },
+            where: { ...baseWhere, createdAt: { gte: bounds.previousStart, lt: bounds.previousEnd } },
+        }),
+    ]);
+    const total = totalAgg._sum.total ?? 0;
+    const current = currentAgg._sum.total ?? 0;
+    return { total: bounds.currentStart ? current : total, current, previous: previousAgg._sum.total ?? 0 };
 }
 
-function trendBadge({ current, previous }: { current: number; previous: number }) {
+function trendBadge(
+    { current, previous }: { current: number; previous: number },
+    period: DashboardPeriod,
+) {
+    const comparison = period === "all" ? "30 ngày gần đây" : "kỳ trước";
     if (previous === 0) {
         if (current === 0) return { label: "Chưa có dữ liệu", tone: "flat" as const };
-        return { label: "Mới trong 30 ngày", tone: "up" as const };
+        return { label: period === "all" ? "Có phát sinh trong 30 ngày" : "Mới trong kỳ này", tone: "up" as const };
     }
     const percent = Math.round(((current - previous) / previous) * 100);
-    if (percent === 0) return { label: "Không đổi so với 30 ngày trước", tone: "flat" as const };
+    if (percent === 0) return { label: `Không đổi so với ${comparison}`, tone: "flat" as const };
     return {
-        label: `${percent > 0 ? "+" : ""}${percent}% so với 30 ngày trước`,
+        label: `${percent > 0 ? "+" : ""}${percent}% so với ${comparison}`,
         tone: percent > 0 ? ("up" as const) : ("down" as const),
     };
 }
@@ -82,18 +140,6 @@ const toneStyles = {
 };
 
 const currency = (value: number) => `${value.toLocaleString("vi-VN")}₫`;
-
-function timeAgo(date: Date) {
-    const diff = Date.now() - date.getTime();
-    const minutes = Math.floor(diff / 60_000);
-    if (minutes < 1) return "Vừa xong";
-    if (minutes < 60) return `${minutes} phút trước`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours} giờ trước`;
-    const days = Math.floor(hours / 24);
-    if (days < 30) return `${days} ngày trước`;
-    return date.toLocaleDateString("vi-VN");
-}
 
 const ORDER_STATUS_LABEL: Record<string, string> = {
     PENDING: "Chờ xác nhận",
@@ -113,34 +159,42 @@ const ORDER_STATUS_CLASS: Record<string, string> = {
     CANCELLED: "bg-rose-50 text-rose-700",
 };
 
-export default async function AdminDashboardPage() {
+type DashboardPageProps = {
+    searchParams: Promise<{ period?: string }>;
+};
+
+export default async function AdminDashboardPage({ searchParams }: DashboardPageProps) {
+    const query = await searchParams;
+    const period: DashboardPeriod = PERIOD_OPTIONS.some((option) => option.value === query.period)
+        ? (query.period as DashboardPeriod)
+        : "today";
+    const bounds = getPeriodBounds(period);
+    const periodOption = PERIOD_OPTIONS.find((option) => option.value === period) ?? PERIOD_OPTIONS[0];
+
     const [
         productStats,
         categoryStats,
         postStats,
         userStats,
-        contactStats,
         orderStats,
         revenueStats,
         recentProducts,
-        recentContacts,
         recentOrders,
     ] = await Promise.all([
-        countWithTrend(prisma.product),
-        countWithTrend(prisma.category),
-        countWithTrend(prisma.post),
-        countWithTrend({
-            count: (args) => prisma.user.count({ ...args, where: { ...args?.where, role: "CUSTOMER" } }),
-        }),
-        countWithTrend(prisma.contactMessage),
-        countWithTrend(prisma.order),
-        revenueWithTrend(),
+        countForPeriod(prisma.product, bounds),
+        countForPeriod(prisma.category, bounds),
+        countForPeriod(prisma.post, bounds),
+        countForPeriod({
+            count: (args?: { where?: { createdAt?: { gte?: Date; lt?: Date } } }) =>
+                prisma.user.count({ ...args, where: { ...args?.where, role: "CUSTOMER" } }),
+        }, bounds),
+        countForPeriod(prisma.order, bounds),
+        revenueForPeriod(bounds),
         prisma.product.findMany({
             take: 5,
             orderBy: { createdAt: "desc" },
             select: { id: true, name: true, slug: true, price: true, status: true, quantity: true },
         }),
-        prisma.contactMessage.findMany({ take: 5, orderBy: { createdAt: "desc" } }),
         prisma.order.findMany({
             take: 5,
             orderBy: { createdAt: "desc" },
@@ -155,7 +209,6 @@ export default async function AdminDashboardPage() {
         { label: "Danh mục", icon: LayoutGrid, stats: categoryStats },
         { label: "Bài viết", icon: Newspaper, stats: postStats },
         { label: "Khách hàng", icon: Users, stats: userStats },
-        { label: "Tin nhắn", icon: Mail, stats: contactStats },
     ];
 
     const quickActions = [
@@ -163,19 +216,39 @@ export default async function AdminDashboardPage() {
         { label: "Thêm sản phẩm", description: "Tạo sản phẩm mới cho cửa hàng", href: "/admin/products", icon: Package },
         { label: "Thêm danh mục", description: "Sắp xếp lại nhóm sản phẩm", href: "/admin/categories", icon: LayoutGrid },
         { label: "Viết bài mới", description: "Đăng tin tức hoặc bài viết", href: "/admin/posts", icon: FileText },
-        { label: "Xem liên hệ", description: "Phản hồi khách hàng liên hệ", href: "/admin/contacts", icon: Inbox },
     ];
 
     return (
         <div className="space-y-8">
-            <header>
-                <h1 className="text-2xl font-bold text-admin-ink">Tổng quan hệ thống</h1>
-                <p className="mt-1 text-sm text-admin-muted">Theo dõi hoạt động và quản lý dữ liệu DanaFarm.</p>
+            <header className="flex flex-wrap items-end justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-admin-ink">Tổng quan hệ thống</h1>
+                    <p className="mt-1 text-sm text-admin-muted">
+                        Theo dõi hoạt động DanaFarm · Số liệu {periodOption.cardLabel}
+                    </p>
+                </div>
+                <nav
+                    aria-label="Chọn khoảng thời gian thống kê"
+                    className="flex flex-wrap gap-1 rounded-xl border border-admin-border bg-admin-surface p-1 shadow-xs"
+                >
+                    {PERIOD_OPTIONS.map((option) => (
+                        <Link
+                            key={option.value}
+                            href={option.value === "today" ? "/admin" : `/admin?period=${option.value}`}
+                            className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${period === option.value
+                                ? "bg-admin-accent text-white shadow-xs"
+                                : "text-admin-muted hover:bg-admin-bg hover:text-admin-ink"
+                                }`}
+                        >
+                            {option.label}
+                        </Link>
+                    ))}
+                </nav>
             </header>
 
             <section className="grid gap-4 sm:grid-cols-2">
                 {kpis.slice(0, 2).map(({ label, icon: Icon, stats, isCurrency }) => {
-                    const badge = trendBadge(stats);
+                    const badge = trendBadge(stats, period);
                     const { icon: TrendIcon, className } = toneStyles[badge.tone];
                     return (
                         <article key={label} className="rounded-2xl border border-admin-border bg-admin-surface p-5">
@@ -194,7 +267,9 @@ export default async function AdminDashboardPage() {
                             <strong className="mt-4 block text-3xl font-bold text-admin-ink">
                                 {isCurrency ? currency(stats.total) : stats.total}
                             </strong>
-                            <p className="mt-1 text-sm text-admin-muted">{label} (tổng cộng)</p>
+                            <p className="mt-1 text-sm text-admin-muted">
+                                {label} ({periodOption.cardLabel})
+                            </p>
                         </article>
                     );
                 })}
@@ -202,9 +277,9 @@ export default async function AdminDashboardPage() {
 
             <RevenueChart />
 
-            <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+            <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 {kpis.slice(2).map(({ label, icon: Icon, stats }) => {
-                    const badge = trendBadge(stats);
+                    const badge = trendBadge(stats, period);
                     const { icon: TrendIcon, className } = toneStyles[badge.tone];
                     return (
                         <article
@@ -224,7 +299,9 @@ export default async function AdminDashboardPage() {
                                 </span>
                             </div>
                             <strong className="mt-4 block text-3xl font-bold text-admin-ink">{stats.total}</strong>
-                            <p className="mt-1 text-sm text-admin-muted">{label}</p>
+                            <p className="mt-1 text-sm text-admin-muted">
+                                {label} ({periodOption.cardLabel})
+                            </p>
                         </article>
                     );
                 })}
@@ -254,7 +331,7 @@ export default async function AdminDashboardPage() {
                 </div>
             </section>
 
-            <section className="grid gap-5 xl:grid-cols-3">
+            <section className="grid gap-5 xl:grid-cols-2">
                 <div className="rounded-2xl border border-admin-border bg-admin-surface">
                     <div className="flex items-center justify-between border-b border-admin-border px-5 py-4">
                         <h2 className="text-sm font-semibold text-admin-ink">Đơn hàng gần đây</h2>
@@ -316,33 +393,6 @@ export default async function AdminDashboardPage() {
                     )}
                 </div>
 
-                <div className="rounded-2xl border border-admin-border bg-admin-surface">
-                    <div className="flex items-center justify-between border-b border-admin-border px-5 py-4">
-                        <h2 className="text-sm font-semibold text-admin-ink">Liên hệ gần đây</h2>
-                        <Link href="/admin/contacts" className="flex items-center gap-1 text-xs font-medium text-admin-accent hover:underline">
-                            Xem tất cả <ArrowUpRight size={13} />
-                        </Link>
-                    </div>
-                    {recentContacts.length === 0 ? (
-                        <p className="px-5 py-8 text-center text-sm text-admin-muted">Chưa có tin nhắn nào.</p>
-                    ) : (
-                        <ul>
-                            {recentContacts.map((contact) => (
-                                <li key={contact.id} className="border-b border-admin-border px-5 py-3 last:border-none">
-                                    <div className="flex items-center justify-between gap-3">
-                                        <p className="truncate text-sm font-medium text-admin-ink">{contact.name}</p>
-                                        <span className="shrink-0 text-xs text-admin-muted">{timeAgo(contact.createdAt)}</span>
-                                    </div>
-                                    <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-admin-muted">
-                                        {contact.phone ? <Phone size={11} /> : <Mail size={11} />}
-                                        {contact.phone || contact.email}
-                                    </p>
-                                    <p className="mt-1 line-clamp-1 text-sm text-admin-muted">{contact.message}</p>
-                                </li>
-                            ))}
-                        </ul>
-                    )}
-                </div>
             </section>
         </div>
     );

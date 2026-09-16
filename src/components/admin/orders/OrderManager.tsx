@@ -28,7 +28,7 @@ type Meta = {
 };
 
 const STATUS_OPTIONS = [
-  { value: "", label: "Tất cả trạng thái" },
+  { value: "", label: "Tất cả trạng thái đơn" },
   { value: "PENDING", label: "Chờ xác nhận" },
   { value: "CONFIRMED", label: "Đã xác nhận" },
   { value: "PACKING", label: "Đang đóng gói" },
@@ -53,6 +53,11 @@ const PAYMENT_STATUS_OPTIONS = [
   { value: "FAILED", label: "Thất bại" },
 ];
 
+const PAYMENT_STATUS_FILTER_OPTIONS = [
+  { value: "", label: "Tất cả TT thanh toán" },
+  ...PAYMENT_STATUS_OPTIONS,
+];
+
 const PAYMENT_STATUS_CLASS: Record<string, string> = {
   PENDING: "bg-amber-50 text-amber-700 border border-amber-200",
   PAID: "bg-emerald-50 text-emerald-700 border border-emerald-200",
@@ -73,6 +78,7 @@ export function OrderManager() {
   });
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
+  const [paymentStatus, setPaymentStatus] = useState("");
   const [busyId, setBusyId] = useState<number | null>(null);
   const [busyPaymentId, setBusyPaymentId] = useState<number | null>(null);
 
@@ -85,13 +91,14 @@ export function OrderManager() {
         direction: "desc",
       });
       if (status) query.set("status", status);
+      if (paymentStatus) query.set("paymentStatus", paymentStatus);
       const res = await fetch(`/api/admin/orders?${query.toString()}`).then(
         (r) => r.json(),
       );
       setItems(res.data ?? []);
       setMeta((current) => res.pagination ?? current);
     },
-    [search, status],
+    [search, status, paymentStatus],
   );
 
   useEffect(() => {
@@ -194,6 +201,17 @@ export function OrderManager() {
               </option>
             ))}
           </select>
+          <select
+            className={fieldClass}
+            value={paymentStatus}
+            onChange={(e) => setPaymentStatus(e.target.value)}
+          >
+            {PAYMENT_STATUS_FILTER_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="overflow-x-auto">
@@ -253,10 +271,9 @@ export function OrderManager() {
                         onChange={(e) =>
                           updatePaymentStatus(order, e.target.value)
                         }
-                        className={`cursor-pointer rounded-full px-2.5 py-1 text-xs font-semibold outline-none ${
-                          PAYMENT_STATUS_CLASS[order.paymentStatus] ??
+                        className={`cursor-pointer rounded-full px-2.5 py-1 text-xs font-semibold outline-none ${PAYMENT_STATUS_CLASS[order.paymentStatus] ??
                           "bg-gray-100 text-gray-700"
-                        }`}
+                          }`}
                         title="Bấm để cập nhật trạng thái thanh toán"
                       >
                         {PAYMENT_STATUS_OPTIONS.map((opt) => (

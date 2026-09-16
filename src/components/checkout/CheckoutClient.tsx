@@ -99,7 +99,11 @@ export function CheckoutClient({
       setOrderSuccess(true);
       clearCart();
       toast.success("Đặt hàng thành công!");
-      router.push(`/account/orders/${body.data.code}`);
+      const orderUrl = new URL(
+        `/account/orders/${body.data.code}`,
+        window.location.origin,
+      );
+      window.location.assign(orderUrl.href);
     } catch (cause) {
       toast.error(
         cause instanceof Error
@@ -156,11 +160,10 @@ export function CheckoutClient({
           </h2>
           <div className="space-y-3">
             <label
-              className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors ${
-                paymentMethod === "COD"
-                  ? "border-shop-main bg-shop-main/5"
-                  : "border-shop-border bg-white hover:border-shop-main/40"
-              }`}
+              className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors ${paymentMethod === "COD"
+                ? "border-shop-main bg-shop-main/5"
+                : "border-shop-border bg-white hover:border-shop-main/40"
+                }`}
             >
               <input
                 type="radio"
@@ -181,11 +184,10 @@ export function CheckoutClient({
             </label>
 
             <label
-              className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors ${
-                paymentMethod === "BANK_TRANSFER"
-                  ? "border-shop-main bg-shop-main/5"
-                  : "border-shop-border bg-white hover:border-shop-main/40"
-              }`}
+              className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors ${paymentMethod === "BANK_TRANSFER"
+                ? "border-shop-main bg-shop-main/5"
+                : "border-shop-border bg-white hover:border-shop-main/40"
+                }`}
             >
               <input
                 type="radio"
@@ -236,10 +238,10 @@ export function CheckoutClient({
         <h2 className="border-b border-shop-border pb-4 font-bold text-shop-title">
           Đơn hàng ({items.length} sản phẩm)
         </h2>
-        <div className="max-h-64 space-y-3 overflow-y-auto pr-1">
+        <div className="max-h-64 space-y-3 overflow-y-auto px-1 pt-2">
           {items.map((item) => (
             <div key={item.key} className="flex gap-3">
-              <div className="relative size-14 shrink-0 overflow-hidden rounded-lg border border-shop-border bg-shop-bg">
+              <div className="relative size-14 shrink-0 overflow-visible rounded-lg border border-shop-border bg-shop-bg">
                 {item.imageUrl && (
                   <Image
                     src={item.imageUrl}
@@ -249,7 +251,7 @@ export function CheckoutClient({
                     className="object-contain p-1"
                   />
                 )}
-                <span className="absolute -right-1.5 -top-1.5 grid size-5 place-items-center rounded-full bg-shop-main text-[10px] font-bold text-white">
+                <span className="absolute z-50 -right-1.5 -top-1.5 grid size-5 place-items-center rounded-full bg-shop-main text-[10px] font-bold text-white">
                   {item.quantity}
                 </span>
               </div>

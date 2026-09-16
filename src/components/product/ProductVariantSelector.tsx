@@ -1,7 +1,9 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+import { animateProductToCart } from "@/lib/cart-animation";
 import { formatCurrency } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { useCartStore } from "@/stores/cart-store";
@@ -22,6 +24,7 @@ export function ProductVariantSelector({
   };
   variants: ProductVariant[];
 }) {
+  const router = useRouter();
   const [selected, setSelected] = useState<ProductVariant | null>(
     variants[0] ?? null,
   );
@@ -31,9 +34,9 @@ export function ProductVariantSelector({
   const activeUserId = useCartStore((state) => state.activeUserId);
   const displayPrice = selected ? selected.price : product.price;
 
-  function handleAddToCart() {
+  function addSelectedItem(source: HTMLElement, redirectToCheckout = false) {
     if (activeUserId === null) {
-      toast.error("Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng.");
+      toast.error("Vui lòng đăng nhập để mua sản phẩm.");
       return;
     }
 
@@ -55,6 +58,14 @@ export function ProductVariantSelector({
       },
       quantity,
     );
+
+    if (redirectToCheckout) {
+      toast.success("Đang chuyển đến trang thanh toán...");
+      router.push("/checkout");
+      return;
+    }
+
+    animateProductToCart(source, product.imageUrl);
     toast.success(`Đã thêm ${quantity} sản phẩm vào giỏ hàng.`);
   }
 
@@ -88,11 +99,10 @@ export function ProductVariantSelector({
                 key={v.id}
                 type="button"
                 onClick={() => setSelected(v)}
-                className={`px-4 py-2 rounded-lg border text-sm transition-colors ${
-                  selected?.id === v.id
+                className={`px-4 py-2 rounded-lg border text-sm transition-colors ${selected?.id === v.id
                     ? "border-shop-main bg-shop-main text-white"
                     : "border-shop-border text-shop-text hover:border-shop-main"
-                }`}
+                  }`}
               >
                 {v.name}
               </button>
@@ -143,7 +153,7 @@ export function ProductVariantSelector({
           size="lg"
           variant="outline"
           className="w-full uppercase"
-          onClick={handleAddToCart}
+          onClick={(event) => addSelectedItem(event.currentTarget)}
           disabled={product.stock <= 0}
         >
           Thêm vào giỏ
@@ -151,7 +161,7 @@ export function ProductVariantSelector({
         <Button
           size="lg"
           className="w-full uppercase"
-          onClick={handleAddToCart}
+          onClick={(event) => addSelectedItem(event.currentTarget, true)}
           disabled={product.stock <= 0}
         >
           Mua ngay
