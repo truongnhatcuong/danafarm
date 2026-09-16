@@ -24,10 +24,10 @@ export function HomeBanner({ banners }: { banners: Banner[] }) {
             autoplay={
               banners.length > 1
                 ? {
-                    delay: 5000,
-                    disableOnInteraction: false,
-                    pauseOnMouseEnter: true,
-                  }
+                  delay: 5000,
+                  disableOnInteraction: false,
+                  pauseOnMouseEnter: true,
+                }
                 : false
             }
             navigation={{
@@ -41,26 +41,34 @@ export function HomeBanner({ banners }: { banners: Banner[] }) {
               <SwiperSlide key={banner.id}>
                 <Link
                   href={banner.link || "#"}
-                  className="relative block aspect-[16/8] w-full overflow-hidden md:aspect-[21/7]"
+                  className="block w-full overflow-hidden"
                   aria-label={banner.title ?? `Banner ${index + 1}`}
                 >
+                  {/* Mobile */}
                   {banner.imageMobileUrl && (
                     <Image
                       src={banner.imageMobileUrl}
                       alt={banner.title ?? "DanaFarm banner"}
-                      fill
+                      width={1200}
+                      height={600}
                       priority={index === 0}
-                      quality={92}
-                      className="object-cover md:hidden"
+                      quality={100}
+                      sizes="100vw"
+                      className="h-auto w-full md:hidden"
                     />
                   )}
+
+                  {/* Desktop */}
                   <Image
                     src={banner.imageUrl}
                     alt={banner.title ?? "DanaFarm banner"}
-                    fill
+                    width={1920}
+                    height={640}
                     priority={index === 0}
-                    quality={92}
-                    className={`object-cover ${banner.imageMobileUrl ? "hidden md:block" : ""}`}
+                    quality={100}
+                    sizes="(min-width: 1280px) 1280px, 100vw"
+                    className={`h-auto w-full ${banner.imageMobileUrl ? "hidden md:block" : ""
+                      }`}
                   />
                 </Link>
               </SwiperSlide>
