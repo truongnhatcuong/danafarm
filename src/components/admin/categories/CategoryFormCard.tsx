@@ -43,10 +43,11 @@ export function CategoryFormCard({
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-admin-border pb-4">
         <div className="flex items-center gap-3">
           <span
-            className={`grid size-10 place-items-center rounded-xl ${editing
-              ? "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400"
-              : "bg-admin-accent-soft text-admin-accent"
-              }`}
+            className={`grid size-10 place-items-center rounded-xl ${
+              editing
+                ? "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400"
+                : "bg-admin-accent-soft text-admin-accent"
+            }`}
           >
             {editing ? <Pencil size={18} /> : <FolderPlus size={18} />}
           </span>
@@ -142,11 +143,12 @@ export function CategoryFormCard({
             />
           </label>
 
-          <div className="rounded-xl border border-admin-border  text-center bg-admin-bg/40 p-3">
+          <div className="mx-auto w-fit rounded-xl border border-admin-border bg-admin-bg/40 p-3 text-center md:w-full">
             <span className="block text-xs font-semibold text-admin-ink">
               Ảnh danh mục
             </span>
-            <div className="mt-2 flex items-center gap-3">
+
+            <div className="mt-2 flex items-center justify-center gap-3">
               {value.imageUrl ? (
                 <div className="flex items-center gap-3">
                   <Image
@@ -156,18 +158,22 @@ export function CategoryFormCard({
                     height={64}
                     className="size-16 rounded-lg border border-admin-border object-cover shadow-xs"
                   />
+
                   <button
                     type="button"
                     className="rounded bg-rose-50 px-2 py-1 text-xs font-semibold text-rose-600 transition hover:bg-rose-100"
                     onClick={() =>
-                      onChange({ imageUrl: "", imageUploadKey: "" })
+                      onChange({
+                        imageUrl: "",
+                        imageUploadKey: "",
+                      })
                     }
                   >
                     Gỡ ảnh
                   </button>
                 </div>
               ) : (
-                <div className="flex-1">
+                <div className="w-fit">
                   <UploadButton
                     endpoint="adminImage"
                     appearance={{
@@ -184,11 +190,13 @@ export function CategoryFormCard({
                     }}
                     onClientUploadComplete={(files) => {
                       const file = files[0];
-                      if (file)
+
+                      if (file) {
                         onChange({
                           imageUrl: file.url,
                           imageUploadKey: file.key,
                         });
+                      }
                     }}
                     onUploadError={(error) => onUploadError(error.message)}
                   />

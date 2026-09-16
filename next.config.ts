@@ -57,7 +57,10 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "danagreenfarm.com",
-        pathname: "/wp-content/uploads/**",
+      },
+      {
+        protocol: "http",
+        hostname: "danagreenfarm.com",
       },
     ],
   },
