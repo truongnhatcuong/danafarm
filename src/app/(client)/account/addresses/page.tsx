@@ -36,12 +36,16 @@ export default async function AddressesPage() {
         <div className="my-8">
           <AddressList />
         </div>
-        <ButtonLink href="/account" variant="outline">
+        <ButtonLink
+          href="/account"
+          variant="outline"
+          className="text-xs md:text-sm"
+        >
           Quay lại tài khoản
         </ButtonLink>
         <Link
           href="/collections/all"
-          className="ml-4 text-sm font-semibold text-shop-main hover:underline"
+          className="ml-4 text-xs md:text-sm font-semibold text-shop-main hover:underline"
         >
           Tiếp tục mua sắm
         </Link>
